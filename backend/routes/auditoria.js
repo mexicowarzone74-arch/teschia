@@ -22,7 +22,12 @@ router.get('/', auth, checkRole('coordinador'), async (req, res) => {
         let paramIndex = 1;
 
         let query = `
-            SELECT a.*, u.username as usuario_nombre
+            SELECT a.*,
+              u.username as usuario_nombre,
+              u.nombre as usuario_nombre_real,
+              u.apellido_paterno as usuario_apellido,
+              u.rol as usuario_rol,
+              (a.created_at AT TIME ZONE 'America/Mexico_City') as created_at_mx
             FROM auditoria a
             LEFT JOIN usuarios u ON a.usuario_id = u.id
             WHERE 1=1
@@ -80,6 +85,21 @@ router.get('/', auth, checkRole('coordinador'), async (req, res) => {
 });
 
 // Obtener estadísticas de actividad
+// Obtener lista de todos los usuarios que tienen registros en auditoria
+router.get('/usuarios', auth, checkRole('coordinador'), async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT u.id, u.username, u.nombre, u.apellido_paterno, u.rol
+            FROM auditoria a
+            JOIN usuarios u ON a.usuario_id = u.id
+            ORDER BY u.nombre
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.get('/stats', auth, checkRole('coordinador'), async (req, res) => {
     try {
         const stats = await pool.query(`
@@ -94,7 +114,7 @@ router.get('/stats', auth, checkRole('coordinador'), async (req, res) => {
 
         const activityByDay = await pool.query(`
             SELECT 
-                DATE_TRUNC('day', created_at) as fecha,
+                DATE_TRUNC('day', created_at AT TIME ZONE 'America/Mexico_City') as fecha,
                 COUNT(*) as cantidad
             FROM auditoria
             WHERE created_at > NOW() - INTERVAL '30 days'

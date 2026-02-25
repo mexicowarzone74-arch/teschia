@@ -228,7 +228,8 @@ export const notificacionesService = {
 
 export const auditoriaService = {
   getLogs: (params) => api.get('/auditoria', { params }),
-  getStats: () => api.get('/auditoria/stats')
+  getStats: () => api.get('/auditoria/stats'),
+  getUsuarios: () => api.get('/auditoria/usuarios')
 };
 
 export const tfaService = {
