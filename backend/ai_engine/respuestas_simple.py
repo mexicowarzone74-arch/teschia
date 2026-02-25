@@ -2791,53 +2791,88 @@ Si el sistema no tiene arrastre visual, usa:
     },
     
     "sugerencias ia": {
-        "respuesta": """**Cómo Funcionan las Sugerencias de la IA**
+        "respuesta": """**Que Puedo Hacer por Ti**
 
-El Asistente Inteligente analiza constantemente tu sistema y genera sugerencias automáticas:
+Soy el asistente inteligente de TESCHA. Puedo ayudarte con todo esto:
 
-**Tipos de Sugerencias:**
+**CONSULTAS EN TIEMPO REAL (preguntame directamente):**
+- "Quien debe" - Ver todos los adeudos del periodo
+- "Cuanto hemos recaudado" - Estadisticas financieras
+- "Dame info del alumno [matricula]" - Datos completos de un estudiante
+- "Que grupos no tienen maestro" - Alertas de grupos sin docente
+- "Genera resumen ejecutivo" - Panorama general del sistema
+- "Quien esta en riesgo de desertar" - Alumnos con alertas
 
-**1. Sugerencias Financieras:**
-- Pagos próximos a vencer (3 días antes)
-- Alumnos con adeudos acumulados
-- Recomendaciones de prórrogas
-- Análisis de flujo de ingresos
+**TUTORIALES (dime como hacer algo):**
+- "Como registro un maestro"
+- "Como inscribo alumnos"
+- "Como creo un grupo"
+- "Como registro pagos"
+- "Como paso lista"
+- "Como inicio un periodo"
+- "Como asigno maestros a grupos"
 
-**2. Sugerencias Académicas:**
-- Grupos sin maestro asignado
-- Maestros sugeridos según nivel y disponibilidad
-- Alumnos sin calificaciones
-- Detección de conflictos de horario
+**VERIFICACIONES PREVIAS:**
+Antes de pedir datos, verifico automaticamente que el sistema este listo (periodo activo, grupos creados, etc.) y te explico que hacer si falta algo.
 
-**3. Sugerencias Operativas:**
-- Inscripciones pendientes
-- Grupos con bajo cupo (riesgo de cancelación)
-- Maestros con sobrecarga de trabajo
-- Periodos por cerrar
+**SOPORTE PARA TODOS LOS ROLES:**
+- Coordinador: administracion completa + reportes + configuracion
+- Maestro: mis grupos, calificaciones, asistencias
+- Administrativo: pagos, adeudos, recordatorios
 
-**Cómo Ver Sugerencias:**
-
-**Dashboard Principal:**
-- Las alertas aparecen automáticamente en cards
-- Códigos de color: 🔴 Urgente, 🟡 Importante, 🟢 Info
-
-**Pregunta al Asistente:**
-- "Genera resumen ejecutivo" - Ver todas las sugerencias
-- "Que grupos no tienen maestro" - Sugerencias de asignación
-- "Quien debe" - Sugerencias de cobranza
-- "Cuanto hemos recaudado" - Análisis financiero con recomendaciones
-
-**Personalización:**
-- El sistema aprende del contexto de TESCHA
-- Reconoce patrones de tu operación
-- Prioriza alertas según impacto
-- Se adapta a tu periodo académico actual
-
-**Tip:** Entre más uses el asistente, más precisas serán las sugerencias. Pregunta en lenguaje natural.""",
+**Tip:** Pregunta en lenguaje natural. Entiendo frases como "quiero ver quien me debe" o "como hago para calificar a mis alumnos".""",
         "acciones": [
             {"texto": "Ir al Dashboard", "ruta": "/dashboard"}
         ]
     },
+
+    "primeros_pasos": {
+        "respuesta": """**Por Donde Empezar con TESCHA**
+
+Si es la primera vez que usas el sistema, sigue este orden:
+
+**PASO 1 - Crear un Periodo Academico**
+Sin un periodo activo, nada mas funciona.
+1. Menu -> "Periodos" -> "+ Nuevo Periodo"
+2. Llena nombre (ej: Enero-Junio 2026), fechas inicio/fin
+3. Activa el toggle "Periodo activo"
+4. Guarda
+
+**PASO 2 - Registrar Maestros (Personal)**
+1. Menu -> "Personal" -> "+ Nuevo Personal"
+2. Llena datos: nombre, correo, telefono
+3. Asigna niveles que imparte (Basico, Intermedio, etc.)
+4. Guarda -> el maestro puede recibir acceso al sistema
+
+**PASO 3 - Crear Grupos**
+1. Menu -> "Grupos" -> "+ Nuevo Grupo"
+2. Datos: codigo (ej: B1-01), nivel, periodo, horario
+3. Asigna maestro si ya est registrado
+4. Guarda
+
+**PASO 4 - Registrar e Inscribir Alumnos**
+1. Menu -> "Alumnos" -> "+ Nuevo Alumno" (para alumnos nuevos)
+2. Llena datos: nombre, matricula, correo, tipo
+3. Menu -> "Inscripciones Rapidas" -> busca alumno -> selecciona grupo
+4. Al confirmar se generan los 4 pagos del periodo automaticamente
+
+**PASO 5 - Dar Acceso al Personal**
+1. Menu -> "Usuarios" -> "+ Nuevo Usuario"
+2. Vincula con el maestro/administrativo ya registrado
+3. Asigna rol y contraseña temporal
+
+**Una vez configurado:**
+- Usa el Dashboard para ver alertas y resumen
+- Preguntame "quien debe", "que grupos no tienen maestro", etc.
+- El sistema monitorea todo en tiempo real
+
+Si quieres que yo te guie paso a paso, dime en que paso estas y te ayudo.""",
+        "acciones": [
+            {"texto": "Ir a Periodos", "ruta": "/periodos"},
+            {"texto": "Ir al Dashboard", "ruta": "/dashboard"}
+        ]
+    },
+
     
     "calendario horarios": {
         "respuesta": """**Como Ver Calendario de Horarios**
@@ -3127,7 +3162,12 @@ def buscar_respuesta_simple(pregunta):
         "registrar maestro": ["registrar maestro", "nuevo maestro", "crear maestro", "agregar maestro", "alta maestro", "como registrar maestro", "como registro maestro", "como agregar maestro"],
         "registrar alumno": ["registrar alumno", "nuevo alumno", "crear alumno", "alta alumno", "como registrar alumno", "agregar nuevo alumno"],
         "inscripciones masivas": ["inscribir masivamente", "inscripciones masivas", "inscribir alumnos", "inscribir varios alumnos", "inscripciones rapidas", "como inscribir masivamente", "inscribir grupo alumnos"],
-        "crear grupo": ["crear grupo", "nuevo grupo", "registrar grupo", "alta grupo", "como crear grupo"],
+        "crear grupo": [
+            "crear grupo", "nuevo grupo", "registrar grupo", "alta grupo", "como crear grupo",
+            # formas conjugadas
+            "creo grupo", "creo un grupo", "como creo grupo", "como creo un grupo",
+            "crea un grupo", "creamos un grupo", "quiero crear grupo", "quiero un grupo nuevo"
+        ],
         "registrar pago": ["registrar pago", "nuevo pago", "cobrar", "pago alumno", "como registrar pago"],
         "enviar recordatorio": ["enviar recordatorio", "recordatorio pago", "como enviar recordatorio", "notificar pago", "avisar pago", "recordar pago"],
         "otorgar prorroga": ["otorgar prorroga", "dar prorroga", "extender fecha", "como dar prorroga", "prorroga pago", "extender plazo", "ampliar plazo"],
@@ -3143,8 +3183,19 @@ def buscar_respuesta_simple(pregunta):
         "reportar ausencias criticas": ["ausencias criticas", "reportar ausencias", "alumnos con faltas", "muchas faltas", "como reportar ausencias", "faltas consecutivas"],
         "comparar periodo anterior": ["comparar periodo", "periodo anterior", "como comparar periodos", "comparativa periodos", "vs periodo anterior", "evolucion periodos"],
         "identificar mejores alumnos": ["mejores alumnos", "alumnos destacados", "top alumnos", "ranking alumnos", "como identificar mejores", "cuadro honor", "mejores promedios"],
-        "resumen ejecutivo": ["resumen ejecutivo", "generar resumen", "como generar resumen", "resumen del sistema", "dashboard ia", "resumen ia",
-                              "que problemas tiene", "problemas del sistema", "que falla", "que esta mal", "falla el sistema", "errores del sistema", "que esta fallando", "que no funciona"],
+        "resumen ejecutivo": [
+            "resumen ejecutivo", "generar resumen", "como generar resumen", "resumen del sistema", "dashboard ia", "resumen ia",
+            "que problemas tiene", "problemas del sistema", "que falla", "que esta mal",
+            "falla el sistema", "errores del sistema", "que esta fallando", "que no funciona",
+        ],
+        "primeros_pasos": [
+            # onboarding / primeros pasos
+            "por donde empiezo", "como empiezo", "que hago primero", "quiero empezar",
+            "por donde comienzo", "como comienzo", "primeros pasos", "inicio rapido",
+            "que debo hacer primero", "como iniciar el sistema", "setup inicial",
+            "configurar sistema", "configurar tescha", "como configuro tescha",
+            "como configuro el sistema", "no se por donde empezar"
+        ],
         "alertas ia": ["alertas ia", "alertas de la ia", "ver alertas", "como ver alertas", "alertas del sistema", "notificaciones ia"],
         "personalizar ia": ["personalizar ia", "personalizar sugerencias", "como personalizar", "configurar ia", "ajustar ia"],
         "editar informacion": ["editar informacion", "como editar", "modificar datos", "cambiar informacion", "actualizar datos", "editar alumno", "editar maestro"],
@@ -3170,11 +3221,27 @@ def buscar_respuesta_simple(pregunta):
             "asignar maestros", "asignacion de maestro", "asignacion de maestros",
             "maestro al grupo", "maestros a grupos", "maestro para grupo"
         ],
-        "ver grupos asignados": ["ver grupos asignados", "grupos asignados maestro", "grupos maestro", "que grupos tiene maestro", "como ver grupos asignados", "consultar grupos maestro"],
+        "ver grupos asignados": [
+            "ver grupos asignados", "grupos asignados maestro", "grupos maestro",
+            "que grupos tiene maestro", "como ver grupos asignados", "consultar grupos maestro",
+            # frases que usa el maestro para ver SUS grupos
+            "mis grupos", "ver mis grupos", "cuales son mis grupos", "que grupos tengo",
+            "grupos asignados a mi", "mis clases", "mis materias", "ver mis clases",
+            "que grupos imparto", "cuales son mis grupos asignados"
+        ],
         "crear usuario acceso": ["crear usuario", "nuevo usuario", "crear usuario acceso", "como crear usuario", "dar acceso sistema", "usuario login", "crear credenciales"],
         "asignar maestro arrastrando": ["asignar arrastrando", "asignar maestro arrastrando", "arrastrar maestro", "drag drop maestro", "asignacion drag", "como asignar arrastrando"],
         "ver carga trabajo": ["ver carga trabajo", "carga trabajo maestro", "carga maestro", "horarios maestro", "cuantas horas maestro", "como ver carga", "carga horaria"],
-        "sugerencias ia": ["sugerencias ia", "como funcionan sugerencias", "sugerencias del sistema", "recomendaciones ia", "como funciona ia", "sugerencias inteligentes"],
+        "sugerencias ia": [
+            "sugerencias ia", "como funcionan sugerencias", "sugerencias del sistema",
+            "recomendaciones ia", "como funciona ia", "sugerencias inteligentes",
+            # frases para saber qué puede hacer la IA
+            "que puedes hacer", "que puedes hacer tu", "para que sirves",
+            "que sabes hacer", "que sabe hacer la ia", "que sabe la ia",
+            "que puedo preguntarte", "que pregunto", "ayudame con que",
+            "que funciones tienes", "cuales son tus funciones",
+            "como me puedes ayudar", "que me puedes decir"
+        ],
         "calendario horarios": ["calendario horarios", "ver horarios", "como ver horarios", "calendario de clases", "horario grupos", "horario maestro"],
         "filtrar maestro horarios": ["filtrar maestro", "filtrar por maestro", "horarios maestro", "ver horarios maestro", "horario docente", "como filtrar maestro"],
         "detectar huecos horarios": ["detectar huecos", "huecos disponibles", "espacios disponibles", "horarios libres", "horas libres", "huecos horarios", "como detectar huecos"],

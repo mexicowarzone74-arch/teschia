@@ -856,7 +856,10 @@ def detectar_y_ejecutar_herramienta(pregunta: str, contexto: Dict[str, Any]) -> 
             "acciones": [{"texto": "Ir a Personal", "ruta": "/maestros"}]
         },
         {
-            "claves": ['grupo', 'crea grupo', 'nuevo grupo'],
+            # NOTA: claves cortas ('grupo','crear','nuevo','creo') permiten que
+            # combinaciones como "como crear un grupo" o "como creo un grupo" generen
+            # 2 coincidencias y disparen esta guia sin necesidad de frases exactas.
+            "claves": ['grupo', 'crear', 'nuevo', 'creo'],
             "respuesta": (
                 "Para crear un grupo:\n\n"
                 "1. Ve al menu **Grupos**\n"
@@ -873,6 +876,23 @@ def detectar_y_ejecutar_herramienta(pregunta: str, contexto: Dict[str, Any]) -> 
                 "Si quieres que yo lo cree, dime el codigo, nivel y horario."
             ),
             "acciones": [{"texto": "Ir a Grupos", "ruta": "/grupos"}]
+        },
+        {
+            # Guia para maestros que quieren VER sus grupos (no crear)
+            "claves": ['grupo', 'ver', 'veo', 'mis', 'consultar', 'cuales'],
+            "respuesta": (
+                "Para ver tus grupos asignados tienes tres opciones:\n\n"
+                "**Opcion 1 - Dashboard:**\n"
+                "Al entrar al sistema tu Dashboard muestra directamente los grupos que tienes asignados con numero de alumnos y clases del dia.\n\n"
+                "**Opcion 2 - Menu Grupos:**\n"
+                "1. Ve al menu **Grupos** en el panel lateral\n"
+                "2. Solo apareceran los grupos asignados a ti\n"
+                "3. Cada grupo muestra: nivel, horario, numero de alumnos y maestro\n\n"
+                "**Opcion 3 - Preguntame:**\n"
+                "Dime 'cuantos alumnos tengo' o 'dame la lista del grupo [codigo]' y te traigo la informacion al momento.\n\n"
+                "_Tip: Si eres coordinador, en Grupos puedes filtrar por maestro para ver la carga de cualquier docente._"
+            ),
+            "acciones": [{"texto": "Ir a Grupos", "ruta": "/grupos"}, {"texto": "Ir al Dashboard", "ruta": "/dashboard"}]
         },
         {
             "claves": ['recibo', 'genera recibo', 'comprobante'],
@@ -1095,9 +1115,11 @@ def detectar_y_ejecutar_herramienta(pregunta: str, contexto: Dict[str, Any]) -> 
                 return 'registrar_pago'
             if any(p in t for p in ['asignar maestro', 'asignar docente', 'maestro al grupo', 'maestro a grupo']):
                 return 'asignar_maestro_grupo'
-            if any(p in t for p in ['registrar calificaci', 'capturar calificaci', 'agregar calificaci', 'subir calificaci']):
+            if any(p in t for p in ['registrar calificaci', 'capturar calificaci', 'agregar calificaci', 'subir calificaci',
+                                     'ingresar calificaci', 'poner calificaci', 'anotar calificaci', 'calificar alumno', 'calificar grupo']):
                 return 'registrar_calificacion'
-            if any(p in t for p in ['registrar asistencia', 'pasar lista', 'marcar asistencia', 'tomar asistencia']):
+            if any(p in t for p in ['registrar asistencia', 'pasar lista', 'marcar asistencia', 'tomar asistencia',
+                                     'anotar asistencia', 'registrar falta', 'marcar falta', 'anotar falta']):
                 return 'registrar_asistencia'
             return None
 
