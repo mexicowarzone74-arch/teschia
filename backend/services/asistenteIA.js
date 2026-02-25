@@ -145,10 +145,10 @@ Solo pregúntame cualquier cosa sobre el sistema.`,
 💰 **Funciones principales:**
 - Registrar pagos (efectivo, transferencia, tarjeta)
 - Generar recibos automáticos
-- Enviar recordatorios por WhatsApp
+- Enviar recordatorios por correo electrónico
 - Gestionar prórrogas con fechas límite
 
-💡 **Recordatorios automáticos:** Se envían 3 días antes del vencimiento.
+💡 **Recordatorios automáticos:** Se envían por email 3 días antes del vencimiento.
 
 ⚠️ **Problema común:** Si no aparece un pago, verifica que la inscripción exista.`,
       acciones: [
@@ -1182,23 +1182,29 @@ Formato: Guía paso a paso y este JSON al final:
     const preguntaLower = (pregunta || '').toLowerCase();
     let respuestaFallback = null;
 
-    // Buscar en baseConocimiento según palabras clave
-    if (preguntaLower.includes('grupo') || preguntaLower.includes('grupo')) {
-      respuestaFallback = baseConocimiento.paginas?.grupos?.descripcion || baseConocimiento.paginas?.grupos?.descripcionMaestro;
-    } else if (preguntaLower.includes('alumno') || preguntaLower.includes('inscri')) {
-      respuestaFallback = baseConocimiento.paginas?.alumnos?.descripcion || baseConocimiento.paginas?.inscripciones?.descripcion;
-    } else if (preguntaLower.includes('pago') || preguntaLower.includes('deuda') || preguntaLower.includes('cobr')) {
-      respuestaFallback = baseConocimiento.paginas?.pagos?.descripcion;
-    } else if (preguntaLower.includes('maestro') || preguntaLower.includes('profesor')) {
-      respuestaFallback = baseConocimiento.paginas?.maestros?.descripcion;
-    } else if (preguntaLower.includes('calificaci') || preguntaLower.includes('nota') || preguntaLower.includes('parcial')) {
-      respuestaFallback = baseConocimiento.paginas?.calificaciones?.descripcion;
-    } else if (preguntaLower.includes('periodo') || preguntaLower.includes('ciclo')) {
-      respuestaFallback = baseConocimiento.paginas?.periodos?.descripcion;
-    } else if (preguntaLower.includes('reporte') || preguntaLower.includes('estadistic')) {
-      respuestaFallback = baseConocimiento.paginas?.reportes?.descripcion;
-    } else if (preguntaLower.includes('asistencia')) {
-      respuestaFallback = baseConocimiento.paginas?.asistencias?.descripcion;
+    // Detectar si es pregunta de DATOS (quién, cuántos, cuánto, lista, dame, muestra)
+    // o pregunta de NAVEGACIÓN/CÓMO (cómo, qué es, para qué, explica)
+    const esPregunaDatos = /^(qui[eé]n|cu[aá]ntos?|cu[aá]nto|lista|dame|mu[eé]strame|cuales|cu[aá]les|hay algún|cuál es el|cuánto se|total de|reporte de)/i.test(preguntaLower);
+
+    // Solo devolver ayuda estática si la pregunta es de NAVEGACIÓN, no de datos
+    if (!esPregunaDatos) {
+      if (preguntaLower.includes('grupo')) {
+        respuestaFallback = baseConocimiento.paginas?.grupos?.descripcion || baseConocimiento.paginas?.grupos?.descripcionMaestro;
+      } else if (preguntaLower.includes('alumno') || preguntaLower.includes('inscri')) {
+        respuestaFallback = baseConocimiento.paginas?.alumnos?.descripcion || baseConocimiento.paginas?.inscripciones?.descripcion;
+      } else if (preguntaLower.includes('pago') || preguntaLower.includes('deuda') || preguntaLower.includes('cobr')) {
+        respuestaFallback = baseConocimiento.paginas?.pagos?.descripcion;
+      } else if (preguntaLower.includes('maestro') || preguntaLower.includes('profesor')) {
+        respuestaFallback = baseConocimiento.paginas?.maestros?.descripcion;
+      } else if (preguntaLower.includes('calificaci') || preguntaLower.includes('nota') || preguntaLower.includes('parcial')) {
+        respuestaFallback = baseConocimiento.paginas?.calificaciones?.descripcion;
+      } else if (preguntaLower.includes('periodo') || preguntaLower.includes('ciclo')) {
+        respuestaFallback = baseConocimiento.paginas?.periodos?.descripcion;
+      } else if (preguntaLower.includes('reporte') || preguntaLower.includes('estadistic')) {
+        respuestaFallback = baseConocimiento.paginas?.reportes?.descripcion;
+      } else if (preguntaLower.includes('asistencia')) {
+        respuestaFallback = baseConocimiento.paginas?.asistencias?.descripcion;
+      }
     }
 
     if (respuestaFallback) {
