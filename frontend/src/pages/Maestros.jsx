@@ -653,13 +653,26 @@ const Maestros = () => {
                     </div>
                   </div>
                   
+                  <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <span className="text-3xl">📧</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-blue-900 mb-1">Verificación de correo requerida</p>
+                        <p className="text-sm text-blue-800 leading-relaxed">
+                          Se ha enviado un correo de verificación a <strong>{credencialesCreadas?.email}</strong>.<br/>
+                          El usuario <strong>NO podrá iniciar sesión</strong> hasta que verifique su correo electrónico.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
                     <div className="flex gap-3">
                       <span className="text-3xl">⚠️</span>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-yellow-900 mb-1">¡Importante!</p>
                         <p className="text-sm text-yellow-800 leading-relaxed">
-                          Esta contraseña es <strong>temporal y segura</strong>. El maestro <strong>DEBE cambiarla</strong> en su primer acceso. 
+                          Esta contraseña es <strong>temporal y segura</strong>. El usuario <strong>DEBE cambiarla</strong> en su primer acceso. 
                           Copia y envía estas credenciales de forma segura.
                         </p>
                       </div>

@@ -341,6 +341,7 @@ router.post('/', auth, checkRole('coordinador'), async (req, res) => {
       usuario_creado: {
         username,
         password: passwordTemporal, // Contraseña generada aleatoriamente
+        email: correo,
         debe_cambiar_password: true
       }
     });
