@@ -932,7 +932,210 @@ def detectar_y_ejecutar_herramienta(pregunta: str, contexto: Dict[str, Any]) -> 
     
     try:
         # ========================================
-        # PASO 2: BÃšSQUEDA DE ALUMNO POR MATRÃCULA O NOMBRE (SÃšPER COMPLETA)
+        # BLOQUE 1: VERIFICACION DE PREREQUISITOS PARA ACCIONES
+        # Antes de pedir datos al usuario, verificar que el sistema
+        # tiene lo necesario para ejecutar la accion sin dar error.
+        # ========================================
+
+        PREREQUISITOS = {
+            # accion_clave: { query_check, mensaje_si_falta, pasos_solucion, accion_ruta }
+            "crear_grupo": {
+                "descripcion": "crear un grupo",
+                "checks": [
+                    {
+                        "sql": "SELECT id FROM periodos WHERE activo = true LIMIT 1",
+                        "falta": "No hay un **periodo activo** en el sistema.",
+                        "pasos": (
+                            "Antes de crear grupos necesitas un periodo activo:\n"
+                            "1. Ve al menu **Periodos**\n"
+                            "2. Haz clic en **+ Nuevo Periodo**\n"
+                            "3. Llena nombre (ej: Enero-Junio 2026), fecha inicio y fin\n"
+                            "4. Activa el toggle **Periodo activo**\n"
+                            "5. Guarda -> ya podras crear grupos"
+                        ),
+                        "ruta": "/periodos"
+                    }
+                ]
+            },
+            "inscribir_alumno": {
+                "descripcion": "inscribir un alumno",
+                "checks": [
+                    {
+                        "sql": "SELECT id FROM periodos WHERE activo = true LIMIT 1",
+                        "falta": "No hay un **periodo activo**.",
+                        "pasos": (
+                            "Para inscribir alumnos primero necesitas un periodo activo:\n"
+                            "1. Menu **Periodos** -> + Nuevo Periodo\n"
+                            "2. Llena nombre y fechas, activa el toggle\n"
+                            "3. Guarda"
+                        ),
+                        "ruta": "/periodos"
+                    },
+                    {
+                        "sql": "SELECT COUNT(*) FROM grupos g JOIN periodos p ON g.periodo_id = p.id WHERE p.activo = true",
+                        "falta_si_cero": True,
+                        "falta": "No hay **grupos creados** en el periodo activo.",
+                        "pasos": (
+                            "Antes de inscribir alumnos necesitas tener grupos:\n"
+                            "1. Menu **Grupos** -> + Nuevo Grupo\n"
+                            "2. Llena codigo (ej: B1-01), selecciona nivel, periodo y horario\n"
+                            "3. Guarda"
+                        ),
+                        "ruta": "/grupos"
+                    }
+                ]
+            },
+            "registrar_pago": {
+                "descripcion": "registrar un pago",
+                "checks": [
+                    {
+                        "sql": "SELECT id FROM periodos WHERE activo = true LIMIT 1",
+                        "falta": "No hay un **periodo activo**.",
+                        "pasos": (
+                            "Para registrar pagos necesitas un periodo activo:\n"
+                            "1. Menu **Periodos** -> + Nuevo Periodo -> activa el toggle"
+                        ),
+                        "ruta": "/periodos"
+                    },
+                    {
+                        "sql": "SELECT COUNT(*) FROM inscripciones i JOIN periodos p ON i.periodo_id = p.id WHERE p.activo = true",
+                        "falta_si_cero": True,
+                        "falta": "No hay **alumnos inscritos** en el periodo activo aun.",
+                        "pasos": (
+                            "Para que haya pagos primero deben existir inscripciones:\n"
+                            "1. Registra al alumno: Menu **Alumnos** -> + Nuevo Alumno\n"
+                            "2. Inscribelo: Menu **Inscripciones Rapidas** -> busca alumno -> selecciona grupo\n"
+                            "3. Al confirmar se generan los pagos automaticamente"
+                        ),
+                        "ruta": "/inscripciones"
+                    }
+                ]
+            },
+            "asignar_maestro_grupo": {
+                "descripcion": "asignar un maestro a un grupo",
+                "checks": [
+                    {
+                        "sql": "SELECT id FROM periodos WHERE activo = true LIMIT 1",
+                        "falta": "No hay un **periodo activo**.",
+                        "pasos": "1. Menu **Periodos** -> + Nuevo Periodo -> activa el toggle -> guarda",
+                        "ruta": "/periodos"
+                    },
+                    {
+                        "sql": "SELECT COUNT(*) FROM grupos g JOIN periodos p ON g.periodo_id = p.id WHERE p.activo = true",
+                        "falta_si_cero": True,
+                        "falta": "No hay **grupos creados** en el periodo activo.",
+                        "pasos": (
+                            "Primero crea los grupos:\n"
+                            "1. Menu **Grupos** -> + Nuevo Grupo\n"
+                            "2. Llena codigo, nivel y horario -> Guarda"
+                        ),
+                        "ruta": "/grupos"
+                    },
+                    {
+                        "sql": "SELECT COUNT(*) FROM maestros",
+                        "falta_si_cero": True,
+                        "falta": "No hay **maestros registrados** en el sistema.",
+                        "pasos": (
+                            "Primero registra maestros:\n"
+                            "1. Menu **Personal** -> + Nuevo Personal\n"
+                            "2. Llena datos y selecciona niveles que imparte"
+                        ),
+                        "ruta": "/maestros"
+                    }
+                ]
+            },
+            "registrar_calificacion": {
+                "descripcion": "registrar calificaciones",
+                "checks": [
+                    {
+                        "sql": "SELECT id FROM periodos WHERE activo = true LIMIT 1",
+                        "falta": "No hay un **periodo activo**.",
+                        "pasos": "1. Menu **Periodos** -> + Nuevo Periodo -> activa el toggle",
+                        "ruta": "/periodos"
+                    },
+                    {
+                        "sql": "SELECT COUNT(*) FROM inscripciones i JOIN periodos p ON i.periodo_id = p.id WHERE p.activo = true",
+                        "falta_si_cero": True,
+                        "falta": "No hay alumnos inscritos en el periodo activo.",
+                        "pasos": "Inscribe alumnos primero desde **Inscripciones Rapidas**.",
+                        "ruta": "/inscripciones"
+                    }
+                ]
+            },
+            "registrar_asistencia": {
+                "descripcion": "registrar asistencias",
+                "checks": [
+                    {
+                        "sql": "SELECT id FROM periodos WHERE activo = true LIMIT 1",
+                        "falta": "No hay un **periodo activo**.",
+                        "pasos": "1. Menu **Periodos** -> + Nuevo Periodo -> activa el toggle",
+                        "ruta": "/periodos"
+                    },
+                    {
+                        "sql": "SELECT COUNT(*) FROM inscripciones i JOIN periodos p ON i.periodo_id = p.id WHERE p.activo = true",
+                        "falta_si_cero": True,
+                        "falta": "No hay alumnos inscritos en el periodo activo.",
+                        "pasos": "Inscribe alumnos primero desde **Inscripciones Rapidas**.",
+                        "ruta": "/inscripciones"
+                    }
+                ]
+            }
+        }
+
+        def detectar_accion(text):
+            t = text.lower()
+            # IMPORTANTE: no aplicar prerequisitos a preguntas "como"
+            if 'como' in t or 'c\u00f3mo' in t or 'qu\u00e9' in t or 'que ' in t:
+                return None
+            if any(p in t for p in ['crear grupo', 'nuevo grupo', 'registrar grupo']):
+                return 'crear_grupo'
+            if any(p in t for p in ['inscribir', 'inscripcion', 'inscripci\u00f3n']):
+                return 'inscribir_alumno'
+            if any(p in t for p in ['registrar pago', 'nuevo pago', 'cobrar', 'agregar pago']):
+                return 'registrar_pago'
+            if any(p in t for p in ['asignar maestro', 'asignar docente', 'maestro al grupo', 'maestro a grupo']):
+                return 'asignar_maestro_grupo'
+            if any(p in t for p in ['registrar calificaci', 'capturar calificaci', 'agregar calificaci', 'subir calificaci']):
+                return 'registrar_calificacion'
+            if any(p in t for p in ['registrar asistencia', 'pasar lista', 'marcar asistencia', 'tomar asistencia']):
+                return 'registrar_asistencia'
+            return None
+
+        accion_detectada = detectar_accion(pregunta)
+        if accion_detectada and accion_detectada in PREREQUISITOS:
+            prq = PREREQUISITOS[accion_detectada]
+            debug_print(f" [PREREQUISITOS] Verificando para accion: {accion_detectada}")
+            try:
+                for check in prq["checks"]:
+                    cursor.execute(check["sql"])
+                    fila = cursor.fetchone()
+                    # Si el check espera que haya al menos 1 row con COUNT > 0
+                    falta = False
+                    if check.get("falta_si_cero"):
+                        falta = (fila is None or fila[0] == 0)
+                    else:
+                        falta = (fila is None)
+                    if falta:
+                        cursor.close()
+                        conn.close()
+                        debug_print(f" [PREREQUISITOS] Prerequisito faltante: {check['falta']}")
+                        return True, {
+                            "success": True,
+                            "respuesta": (
+                                f"Para poder **{prq['descripcion']}** falta un paso previo:\n\n"
+                                f"{check['falta']}\n\n"
+                                f"{check['pasos']}\n\n"
+                                f"Una vez completado ese paso, regresa y con gusto lo hacemos."
+                            ),
+                            "acciones": [{"texto": "Ir a configurar", "ruta": check.get("ruta", "/")}],
+                            "sugerencias": [f"\u00bfC\u00f3mo hago {prq['descripcion']}?"]
+                        }
+            except Exception as e:
+                debug_print(f" [PREREQUISITOS] Error al verificar: {e}")
+                # Si falla la verificacion, dejar pasar al flujo normal
+
+        # ========================================
+        # PASO 2: BÚSQUEDA DE ALUMNO POR MATRÍCULA O NOMBRE (SÚPER COMPLETA)
         # ========================================
         matricula_match = re.search(r'\b\d{9,10}\b', pregunta)  # Detectar matrícula (9-10 dígitos)
         
