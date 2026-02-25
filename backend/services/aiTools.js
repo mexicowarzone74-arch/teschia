@@ -271,11 +271,11 @@ export const aiToolsDefinition = [
     type: 'function',
     function: {
       name: 'obtener_detalles_personal',
-      description: 'Obtiene información completa de un maestro o administrativo (teléfono, niveles, grupos).',
+      description: 'Obtiene información completa de un maestro o administrativo. REQUIERE el ID numérico real obtenido de listar_personal o buscar resultados. NUNCA usar placeholders.',
       parameters: {
         type: 'object',
         properties: {
-          usuario_id: { type: 'number', description: 'El ID del usuario/maestro' }
+          usuario_id: { type: 'number', description: 'ID numérico real del usuario/maestro (ejemplo: 5, 12, 30). Debe ser un número obtenido de una búsqueda previa.' }
         },
         required: ['usuario_id']
       }
@@ -592,11 +592,13 @@ export const aiToolsImplementations = {
 
   obtener_detalles_personal: async ({ usuario_id }) => {
     try {
+      const uid = parseInt(usuario_id, 10);
+      if (isNaN(uid)) return { error: 'usuario_id debe ser un número entero real, no un placeholder' };
       const result = await pool.query(`
         SELECT m.nombre, m.apellido_paterno, m.apellido_materno, m.correo, m.telefono, u.rol,
                ARRAY(SELECT n.nombre FROM niveles n JOIN niveles_maestros nm ON n.id = nm.nivel_id WHERE nm.maestro_id = m.id) as niveles
         FROM maestros m JOIN usuarios u ON m.usuario_id = u.id WHERE u.id = $1
-      `, [usuario_id]);
+      `, [uid]);
       return result.rows[0] || { error: 'No encontrado' };
     } catch (e) { return { error: e.message }; }
   },
@@ -624,7 +626,10 @@ export const aiToolsImplementations = {
 
   asignar_maestro_a_grupo: async ({ maestro_id, grupo_id }) => {
     try {
-      await pool.query('UPDATE grupos SET maestro_id = $1 WHERE id = $2', [maestro_id, grupo_id]);
+      const mid = parseInt(maestro_id, 10);
+      const gid = parseInt(grupo_id, 10);
+      if (isNaN(mid) || isNaN(gid)) return { error: 'maestro_id y grupo_id deben ser IDs numéricos reales, no placeholders' };
+      await pool.query('UPDATE grupos SET maestro_id = $1 WHERE id = $2', [mid, gid]);
       return { success: true, mensaje: 'Asignado.' };
     } catch (e) { return { error: e.message }; }
   },

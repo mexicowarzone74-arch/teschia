@@ -47,9 +47,9 @@ export const MODELOS = {
       calidad: 'alta'
     },
     'llama-3.1-70b': {
-      id: 'llama-3.1-70b-versatile',
+      id: 'llama3-70b-8192',
       provider: 'groq',
-      nombre: 'Llama 3.1 70B',
+      nombre: 'Llama 3 70B',
       descripcion: 'Alternativa robusta de alta calidad',
       contexto: 8000,
       velocidad: 'rapida',
