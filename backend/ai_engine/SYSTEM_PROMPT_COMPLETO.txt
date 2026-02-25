@@ -122,7 +122,7 @@ ESTRUCTURA DE LA BASE DE DATOS
    - estatus: pendiente, pagado, vencido, prorroga
    - fecha_vencimiento: Limite de pago
    - fecha_pago: Cuando se pago
-   - metodo_pago: efectivo, transferencia, tarjeta
+   - metodo_pago: Formato Universal
    - recibo_numero: Folio unico del recibo
 
 6. CALIFICACIONES

@@ -143,7 +143,7 @@ Solo pregúntame cualquier cosa sobre el sistema.`,
       descripcion: `Control completo de pagos y finanzas:
 
 💰 **Funciones principales:**
-- Registrar pagos (efectivo, transferencia, tarjeta)
+- Registrar pagos mediante Formato Universal (ventanilla de gobierno)
 - Generar recibos automáticos
 - Enviar recordatorios por correo electrónico
 - Gestionar prórrogas con fechas límite

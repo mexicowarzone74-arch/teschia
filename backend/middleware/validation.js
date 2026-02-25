@@ -205,7 +205,8 @@ export const pagoSchema = Joi.object({
     fecha_pago: Joi.date()
         .allow(null),
     metodo_pago: Joi.string()
-        .valid('efectivo', 'tarjeta', 'transferencia', 'cheque')
+        .valid('Formato Universal')
+        .default('Formato Universal')
         .allow(null)
         .messages({
             'any.only': 'Método de pago inválido'

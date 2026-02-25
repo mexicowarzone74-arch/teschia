@@ -247,7 +247,7 @@ export const aiToolsDefinition = [
           concepto: { type: 'string' },
           monto: { type: 'number' },
           referencia: { type: 'string' },
-          metodo_pago: { type: 'string', enum: ['efectivo', 'transferencia', 'deposito'] }
+          metodo_pago: { type: 'string', enum: ['Formato Universal'] }
         },
         required: ['inscripcion_id', 'concepto', 'monto']
       }
@@ -583,7 +583,7 @@ export const aiToolsImplementations = {
       const res = await pool.query(
         `INSERT INTO pagos (inscripcion_id, concepto, monto, referencia, metodo_pago, fecha_pago)
          VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id`,
-        [inscripcion_id, concepto, monto, referencia || null, metodo_pago || 'efectivo']
+        [inscripcion_id, concepto, monto, referencia || null, metodo_pago || 'Formato Universal']
       );
       return { success: true, pago_id: res.rows[0].id, mensaje: "Pago registrado." };
     } catch (error) {

@@ -152,7 +152,7 @@ RESPUESTAS_RAPIDAS = {
 4. Selecciona:
    - Periodo
    - Concepto (InscripciÃn, Mensualidad, Extraordinario)
-   - MÃtodo de pago (Efectivo, Transferencia, Tarjeta)
+   - Método de pago: Formato Universal (ventanilla de gobierno)
 5. Ingresa el monto
 6. **Opcional:** Adjunta comprobante
 7. Guardar â   Se genera recibo automÃtico
