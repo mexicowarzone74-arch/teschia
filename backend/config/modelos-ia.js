@@ -195,7 +195,7 @@ export async function ejecutarChatInteligente(messages, tools = [], maxTokens = 
     }
   }
 
-  throw new Error(`❌ Todos los modelos Groq fallaron:\n${errores.join('\n')}`);
+  throw new Error(`❌ Todos los modelos Groq fallaron: ${errores.join(' | ')}`);
 }
 
 /**
