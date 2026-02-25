@@ -1537,18 +1537,75 @@ def procesar_pregunta_ia(pregunta: str, contexto: Dict[str, Any], historial: Lis
             messages.append(response_msg)
             
             # Ejecutar herramientas
+            hubo_resultado_vacio = False
+            nombres_vacios = []
             for tool_call in response_msg.tool_calls:
                 fn_name = tool_call.function.name
                 fn_args = json.loads(tool_call.function.arguments) if isinstance(tool_call.function.arguments, str) else tool_call.function.arguments
                 
                 debug_print(f" [EJECUTANDO_HERRAMIENTA] {fn_name}")
                 resultado = ejecutar_herramienta_en_node(fn_name, fn_args, {**contexto, "preguntaActual": pregunta, "historial": historial})
-                
+
+                # -------------------------------------------------------
+                # DETECCION DE RESULTADO VACIO: si la herramienta no tiene
+                # datos, enriquecer el resultado para que el LLM no se
+                # bloquee sino que ofrezca solucion al usuario.
+                # -------------------------------------------------------
+                resultado_str = json.dumps(resultado, ensure_ascii=False)
+                sin_datos = (
+                    resultado is None
+                    or resultado == {}
+                    or resultado_str in ('null', '{}', '[]', '""', '')
+                    or (isinstance(resultado, dict) and not resultado.get('data') and not resultado.get('id') and not resultado.get('periodo_id') and not resultado.get('rows'))
+                    or (isinstance(resultado, list) and len(resultado) == 0)
+                    or (isinstance(resultado, dict) and resultado.get('error'))
+                )
+                if sin_datos:
+                    hubo_resultado_vacio = True
+                    nombres_vacios.append(fn_name)
+                    # Adjuntar al resultado la instruccion de que el LLM no se bloquee
+                    if isinstance(resultado, dict):
+                        resultado['_sin_datos'] = True
+                        resultado['_instruccion'] = (
+                            f"La herramienta '{fn_name}' no devolvio datos. "
+                            "ESTO NO ES UN BLOQUEO. "
+                            "Debes responder al usuario explicando el estado actual "
+                            "(que no hay datos todavia) Y a continuacion dar los pasos "
+                            "exactos para solucionarlo desde el menu del sistema. "
+                            "NUNCA pidas datos al usuario antes de explicar como hacerlo."
+                        )
+                    else:
+                        resultado = {
+                            '_sin_datos': True,
+                            '_instruccion': (
+                                f"La herramienta '{fn_name}' no devolvio datos. "
+                                "ESTO NO ES UN BLOQUEO. "
+                                "Debes responder al usuario explicando el estado actual "
+                                "Y dar los pasos exactos para solucionarlo desde el menu. "
+                                "NUNCA pidas datos antes de explicar como hacerlo."
+                            )
+                        }
+
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "name": fn_name,
-                    "content": json.dumps(resultado, ensure_ascii=False) # Preservar tildes y eÃes
+                    "content": json.dumps(resultado, ensure_ascii=False)
+                })
+
+            # Si alguna herramienta volvio vacia, inyectar recordatorio al LLM
+            if hubo_resultado_vacio:
+                messages.append({
+                    "role": "system",
+                    "content": (
+                        "RECORDATORIO CRITICO: Las herramientas " + ", ".join(nombres_vacios) + " no devolvieron datos. "
+                        "Esto significa que aun no hay informacion configurada (periodo, grupos, etc). "
+                        "TU RESPUESTA DEBE: "
+                        "1) Decir brevemente que aun no hay [dato] configurado. "
+                        "2) Explicar los pasos exactos para crearlo/configurarlo desde el menu. "
+                        "3) Ofrecer hacerlo si el usuario da los datos necesarios. "
+                        "PROHIBIDO: bloquear la respuesta, pedir datos antes de explicar, decir 'no puedo'."
+                    )
                 })
         
         return parsear_respuesta_final(last_content)
