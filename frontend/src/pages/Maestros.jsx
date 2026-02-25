@@ -657,10 +657,23 @@ const Maestros = () => {
                     <div className="flex gap-3">
                       <span className="text-3xl">📧</span>
                       <div className="flex-1">
-                        <p className="text-sm font-bold text-blue-900 mb-1">Verificación de correo requerida</p>
+                        <p className="text-sm font-bold text-blue-900 mb-1">Correo de verificación enviado</p>
                         <p className="text-sm text-blue-800 leading-relaxed">
-                          Se ha enviado un correo de verificación a <strong>{credencialesCreadas?.email}</strong>.<br/>
-                          El usuario <strong>NO podrá iniciar sesión</strong> hasta que verifique su correo electrónico.
+                          Se envió un correo de verificación a <strong>{credencialesCreadas?.email}</strong>.<br/>
+                          El usuario <strong>NO podrá iniciar sesión</strong> hasta que verifique su correo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 border-2 border-orange-400 rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <span className="text-2xl">📂</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-orange-900 mb-1">¡Aviso importante!</p>
+                        <p className="text-sm text-orange-800 leading-relaxed">
+                          El correo de verificación podría llegar a la carpeta de <strong>Spam o Correo no deseado</strong>.<br/>
+                          Indícale al usuario que revise esa carpeta si no lo encuentra en su bandeja de entrada.
                         </p>
                       </div>
                     </div>
