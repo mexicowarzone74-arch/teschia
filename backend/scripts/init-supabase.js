@@ -43,43 +43,23 @@ async function initDatabase() {
   const hashAdmin = await bcrypt.hash(passwordAdmin, 10);
 
   try {
-    // Actualizar el hash del coordinador en usuarios ya creados por schema.sql
-    const { rowCount: countCoord } = await pool.query(
-      `UPDATE usuarios SET password = $1 WHERE username = 'coordinador'`,
+    // Actualizar contraseñas de usuarios creados por schema.sql (tienen hash placeholder)
+    // ON CONFLICT maneja tanto el caso de que existan como que no
+    await pool.query(
+      `INSERT INTO usuarios (username, password, rol, activo, debe_cambiar_password)
+       VALUES ('coordinador', $1, 'coordinador', true, false)
+       ON CONFLICT (username) DO UPDATE SET password = $1, debe_cambiar_password = false`,
       [hashCoordinador]
     );
+    console.log('✅ Usuario coordinador listo');
 
-    if (countCoord === 0) {
-      // Si no existe, insertarlo
-      await pool.query(
-        `INSERT INTO usuarios (username, password, rol, activo)
-         VALUES ('coordinador', $1, 'coordinador', true)
-         ON CONFLICT (username) DO UPDATE SET password = $1`,
-        [hashCoordinador]
-      );
-      console.log('✅ Usuario coordinador creado');
-    } else {
-      console.log('✅ Contraseña del coordinador actualizada');
-    }
-
-    const { rowCount: countAdmin } = await pool.query(
-      `UPDATE usuarios SET password = $1 WHERE username = 'admin'`,
+    await pool.query(
+      `INSERT INTO usuarios (username, password, rol, activo, debe_cambiar_password)
+       VALUES ('admin', $1, 'administrativo', true, false)
+       ON CONFLICT (username) DO UPDATE SET password = $1, debe_cambiar_password = false`,
       [hashAdmin]
     );
-
-    if (countAdmin === 0) {
-      await pool.query(
-        `INSERT INTO usuarios (username, password, rol, activo)
-         VALUES ('admin', $1, 'administrativo', true)
-         ON CONFLICT (username) DO UPDATE SET password = $1`,
-        [hashAdmin]
-      );
-      console.log('✅ Usuario admin creado');
-    } else {
-      console.log('✅ Contraseña del admin actualizada');
-    }
-
-    // Verificar tablas principales
+    console.log('✅ Usuario admin listo');
     const { rows } = await pool.query(`
       SELECT table_name FROM information_schema.tables 
       WHERE table_schema = 'public' 

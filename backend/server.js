@@ -160,10 +160,11 @@ app.use(helmet({
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (commonOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    if (commonOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
-      callback(null, true); // En desarrollo permitir todo, en prod commonOrigins
+      logger.warn(`CORS: origen bloqueado en producción: ${origin}`);
+      callback(null, false);
     }
   },
   credentials: true

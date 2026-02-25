@@ -6,7 +6,7 @@ services:
     name: tescha-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev 2>/dev/null || true; npm install
     startCommand: node server.js
     plan: free            # Cambia a "starter" en producción real
     healthCheckPath: /health
@@ -36,9 +36,9 @@ services:
         sync: false
       - key: JWT_EXPIRES_IN
         value: "7d"
-      # ── CORS / Frontend URL ──
+      # ── CORS / Frontend URL (REQUERIDO para que el login funcione) ──
       - key: FRONTEND_URL
-        sync: false       # p.ej. https://tescha.pages.dev
+        sync: false       # REQUERIDO: URL de Cloudflare Pages, p.ej. https://tescha.pages.dev
       # ── Email / SMTP ──
       - key: SMTP_HOST
         sync: false
@@ -55,9 +55,16 @@ services:
       # ── Encriptación ──
       - key: ENCRYPTION_KEY
         sync: false
-      # ── IA / Groq ──
+      # ── IA / Groq (soporta múltiples keys separadas por coma, o variables GROQ_API_KEY_2..5)
+      # Formato 1: GROQ_API_KEY=key1,key2,key3
+      # Formato 2: GROQ_API_KEY=key1 + agregar GROQ_API_KEY_2=key2, GROQ_API_KEY_3=key3
       - key: GROQ_API_KEY
         sync: false
+      # Descomenta y agrega más keys para mayor disponibilidad:
+      # - key: GROQ_API_KEY_2
+      #   sync: false
+      # - key: GROQ_API_KEY_3
+      #   sync: false
       # ── Motor IA Python (URL del segundo servicio en Render) ──
       - key: AI_ENGINE_URL
         sync: false       # p.ej. https://tescha-ai.onrender.com

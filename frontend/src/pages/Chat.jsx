@@ -25,8 +25,8 @@ const Chat = () => {
 
     const getFileUrl = (path) => {
         if (!path) return '';
-        // Si el path ya es absoluto, lo dejamos
-        if (path.startsWith('http')) return path;
+        // Si ya es URL absoluta o data URL (base64), devolverla directamente
+        if (path.startsWith('http') || path.startsWith('data:')) return path;
         // Construir URL absoluta basada en la base de la API
         const base = api.defaults.baseURL.replace(/\/api\/?$/, '');
         return `${base}${path}`;

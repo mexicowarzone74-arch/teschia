@@ -3,7 +3,6 @@ import pool from '../config/database.js';
 import { auth, checkRole } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import Papa from 'papaparse';
-import fs from 'fs';
 import path from 'path';
 
 const router = express.Router();
@@ -19,8 +18,8 @@ router.post('/procesar-calificaciones', auth, checkRole('maestro', 'coordinador'
     const ext = path.extname(req.file.originalname).toLowerCase();
     
     if (ext === '.csv') {
-      // Leer archivo CSV
-      const fileContent = fs.readFileSync(req.file.path, 'utf8');
+      // Leer archivo CSV desde buffer (memoryStorage)
+      const fileContent = req.file.buffer.toString('utf8');
       
       // Parsear CSV
       const parsed = Papa.parse(fileContent, {
@@ -35,7 +34,6 @@ router.post('/procesar-calificaciones', auth, checkRole('maestro', 'coordinador'
       );
       
       if (!hasAllFields) {
-        fs.unlinkSync(req.file.path); // Eliminar archivo
         return res.status(400).json({ 
           error: 'El archivo CSV no tiene la estructura correcta',
           camposRequeridos: requiredFields,
@@ -58,15 +56,11 @@ router.post('/procesar-calificaciones', auth, checkRole('maestro', 'coordinador'
       // Validar calificaciones (0-100)
       const invalidas = calificaciones.filter(c => c.calificacion < 0 || c.calificacion > 100);
       if (invalidas.length > 0) {
-        fs.unlinkSync(req.file.path);
         return res.status(400).json({ 
           error: 'Algunas calificaciones están fuera del rango 0-100',
           calificaciones_invalidas: invalidas
         });
       }
-      
-      // Eliminar archivo temporal
-      fs.unlinkSync(req.file.path);
       
       // Retornar datos parseados para vista previa
       res.json({
@@ -79,23 +73,18 @@ router.post('/procesar-calificaciones', auth, checkRole('maestro', 'coordinador'
       
     } else if (ext === '.pdf') {
       // Para PDF, el frontend hace OCR con Tesseract
-      // Aquí solo guardamos el archivo y retornamos la ruta
+      // Con memoryStorage el archivo está en req.file.buffer
       res.json({
         tipo: 'pdf',
         mensaje: 'PDF recibido. Procesar en el frontend con Tesseract',
-        archivo: req.file.filename,
-        ruta: req.file.path
+        nombre: req.file.originalname,
+        tamaño: req.file.size
       });
     } else {
-      fs.unlinkSync(req.file.path);
       res.status(400).json({ error: 'Tipo de archivo no soportado' });
     }
     
   } catch (error) {
-    // Limpiar archivo en caso de error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     console.error('Error al procesar archivo:', error);
     res.status(500).json({ error: error.message });
   }
@@ -157,14 +146,13 @@ router.post('/procesar-asistencias', auth, checkRole('maestro', 'coordinador'), 
     const ext = path.extname(req.file.originalname).toLowerCase();
     
     if (ext === '.csv') {
-      const fileContent = fs.readFileSync(req.file.path, 'utf8');
+      const fileContent = req.file.buffer.toString('utf8');
       const parsed = Papa.parse(fileContent, { header: true, skipEmptyLines: true });
       
       const requiredFields = ['inscripcion_id', 'alumno_id', 'matricula', 'nombre_completo', 'estatus'];
       const hasAllFields = requiredFields.every(field => parsed.meta.fields.includes(field));
       
       if (!hasAllFields) {
-        fs.unlinkSync(req.file.path);
         return res.status(400).json({ 
           error: 'Estructura incorrecta',
           camposRequeridos: requiredFields 
@@ -182,8 +170,6 @@ router.post('/procesar-asistencias', auth, checkRole('maestro', 'coordinador'), 
           observaciones: row.observaciones || ''
         }));
       
-      fs.unlinkSync(req.file.path);
-      
       res.json({
         tipo: 'csv',
         total: asistencias.length,
@@ -193,13 +179,10 @@ router.post('/procesar-asistencias', auth, checkRole('maestro', 'coordinador'), 
       });
       
     } else {
-      res.json({ tipo: 'pdf', archivo: req.file.filename });
+      res.json({ tipo: 'pdf', nombre: req.file.originalname, tamaño: req.file.size });
     }
     
   } catch (error) {
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
     console.error('Error:', error);
     res.status(500).json({ error: error.message });
   }

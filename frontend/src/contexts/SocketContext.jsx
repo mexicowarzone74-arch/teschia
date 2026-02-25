@@ -25,8 +25,10 @@ export const SocketProvider = ({ children }) => {
     let socketInstance = null;
 
     const connect = () => {
+      // URL del backend: usa VITE_BACKEND_URL en producción, localhost en desarrollo
+      const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
       // Conectar al servidor Socket.io con configuración mejorada
-      socketInstance = io('http://coordinacion-tescha.local:5000', {
+      socketInstance = io(SOCKET_URL, {
         withCredentials: true,
         transports: ['websocket', 'polling'],
         reconnection: true,

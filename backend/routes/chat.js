@@ -6,27 +6,12 @@ import logger from '../utils/logger.js';
 
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 
 const router = express.Router();
 
-// Configuración de multer para subir archivos en chat
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = 'uploads/chat';
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
+// Usar memoryStorage: Render tiene filesystem efímero, usamos base64 para persistencia
 const upload = multer({
-    storage: storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx/;
@@ -79,14 +64,19 @@ router.post('/read/:sala_id', auth, async (req, res) => {
 });
 
 // Subir un archivo al chat
+// El archivo se convierte a base64 data URL para persistencia en Render
 router.post('/upload', auth, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No se subió ningún archivo' });
         }
 
+        // Convertir a base64 data URL (persistente, no depende del disco)
+        const base64 = req.file.buffer.toString('base64');
+        const dataUrl = `data:${req.file.mimetype};base64,${base64}`;
+
         const fileInfo = {
-            url: `/api/uploads/chat/${req.file.filename}`,
+            url: dataUrl,
             name: req.file.originalname,
             type: req.file.mimetype,
             size: req.file.size

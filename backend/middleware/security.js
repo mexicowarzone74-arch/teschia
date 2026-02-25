@@ -353,7 +353,24 @@ export const detectAnomalies = (req, res, next) => {
 // ENCRIPTACIÓN DE DATOS SENSIBLES
 // =============================================
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32);
+// IMPORTANTE: ENCRYPTION_KEY debe ser un hex de 32 bytes (64 chars)
+// Generarlo con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+if (!process.env.ENCRYPTION_KEY && process.env.NODE_ENV === 'production') {
+  throw new Error('ENCRYPTION_KEY no está definida. El servidor no puede iniciar en producción sin ella.');
+}
+
+const _rawKey = process.env.ENCRYPTION_KEY;
+let ENCRYPTION_KEY;
+if (_rawKey) {
+  // Aceptar tanto hex (64 chars) como string libre (se hashea a 32 bytes)
+  ENCRYPTION_KEY = _rawKey.length === 64 && /^[0-9a-fA-F]+$/.test(_rawKey)
+    ? Buffer.from(_rawKey, 'hex')
+    : crypto.createHash('sha256').update(_rawKey).digest();
+} else {
+  // Solo en desarrollo local: clave fija para no romper reinicios
+  ENCRYPTION_KEY = crypto.createHash('sha256').update('tescha-dev-key-local-no-usar-en-prod').digest();
+}
+
 const ALGORITHM = 'aes-256-gcm';
 
 export function encryptData(text) {

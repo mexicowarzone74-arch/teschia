@@ -72,7 +72,8 @@ const Grupos = () => {
       if (grupo.id) {
         try {
           // Cargar horarios del grupo desde el backend
-          const response = await fetch(`http://localhost:5000/api/grupos/${grupo.id}`, {
+          const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+          const response = await fetch(`${API_BASE}/api/grupos/${grupo.id}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -128,7 +129,8 @@ const Grupos = () => {
   const cargarSugerencias = async (grupoId) => {
     setLoadingSugerencias(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/grupos/sugerencias-maestros/${grupoId}`, {
+      const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_BASE}/api/grupos/sugerencias-maestros/${grupoId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -169,7 +171,8 @@ const Grupos = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/grupos/asignar-masivo', {
+      const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_BASE}/api/grupos/asignar-masivo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

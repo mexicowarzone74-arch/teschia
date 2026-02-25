@@ -422,7 +422,7 @@ router.post('/solicitar-recuperacion', async (req, res) => {
     );
 
     // Construir URL de recuperación
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://coordinacion-tescha.local'}/restablecer-contrasena/${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/restablecer-contrasena/${token}`;
 
     // Enviar email con el enlace
     await enviarEmailRecuperacion(email, usuario.nombre || usuario.username, resetUrl);

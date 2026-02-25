@@ -401,7 +401,7 @@ const AsistenteIA = () => {
                                   // Manejar descarga con autenticación
                                   try {
                                     const token = localStorage.getItem('token');
-                                    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${ruta}`, {
+                                    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}${ruta}`, {
                                       headers: {
                                         'Authorization': `Bearer ${token}`
                                       }
