@@ -730,7 +730,182 @@ def detectar_y_ejecutar_herramienta(pregunta: str, contexto: Dict[str, Any]) -> 
     print(f"Tiene 'nuevo': {'nuevo' in pregunta_lower}")
     print(f"Tiene 'cómo': {'cómo' in pregunta_lower or 'como' in pregunta_lower}")
     print(f"=====================================\n")
-    
+
+    # ========================================
+    # BLOQUE 0: GUIAS "COMO HAGO X" - SIN NECESIDAD DE BD NI LLM
+    # Si la pregunta es "como hago X", respondemos con pasos directamente.
+    # NUNCA bloqueamos por "no hay periodo activo" ni pedimos datos primero.
+    # ========================================
+    es_como = 'como' in pregunta_lower or 'c\u00f3mo' in pregunta_lower
+    es_pregunta_de_guia = es_como or pregunta_lower.startswith(('qu\u00e9', 'que ', 'explica', 'dime c\u00f3mo', 'dime como', 'ayuda', 'necesito saber', 'ense\u00f1a'))
+
+    GUIAS_COMO = [
+        {
+            "claves": ['asign', 'maestro', 'grupo'],
+            "respuesta": (
+                "Para asignar maestros a grupos tienes dos opciones:\n\n"
+                "**Opcion A - Via menu Asignaciones (masiva):**\n"
+                "1. Ve al menu **Asignaciones** en el panel izquierdo\n"
+                "2. Selecciona el periodo\n"
+                "3. Aparece la lista de grupos; elige el maestro para cada uno\n"
+                "4. Guarda los cambios\n\n"
+                "**Opcion B - Desde el grupo:**\n"
+                "1. Ve al menu **Grupos**\n"
+                "2. Abre el grupo que quieras asignar\n"
+                "3. Campo **Maestro** -> elige de la lista\n"
+                "4. Solo aparecen maestros certificados en ese nivel\n\n"
+                "_Tip: Si el maestro no aparece, ve primero a Personal y verifica que tenga asignado ese nivel._\n\n"
+                "Si quieres que yo lo haga, dime el nombre del grupo y el maestro."
+            ),
+            "acciones": [{"texto": "Ir a Asignaciones", "ruta": "/asignaciones"}, {"texto": "Ir a Grupos", "ruta": "/grupos"}]
+        },
+        {
+            "claves": ['pago', 'registr'],
+            "respuesta": (
+                "Para registrar un pago sigue estos pasos:\n\n"
+                "1. Ve al menu **Pagos** en el panel izquierdo\n"
+                "2. Haz clic en **+ Nuevo Pago**\n"
+                "3. Busca al alumno por nombre o matricula\n"
+                "4. Selecciona la parcialidad que corresponde\n"
+                "5. Llena: monto, metodo de pago y numero de recibo\n"
+                "6. Guarda -> el recibo se genera automaticamente\n\n"
+                "_Tip: Puedes adjuntar comprobante en formato imagen o PDF._\n\n"
+                "Si quieres que yo lo registre, dime el nombre o matricula del alumno y la parcialidad."
+            ),
+            "acciones": [{"texto": "Ir a Pagos", "ruta": "/pagos"}]
+        },
+        {
+            "claves": ['period', 'inici', 'creo', 'creo un period', 'nuevo period', 'crear period', 'activ'],
+            "respuesta": (
+                "Para crear o iniciar un nuevo periodo academico:\n\n"
+                "1. Ve al menu **Periodos** en el panel izquierdo\n"
+                "2. Haz clic en **+ Nuevo Periodo**\n"
+                "3. Llena los datos:\n"
+                "   - **Nombre** (ej: Enero-Junio 2026)\n"
+                "   - **Fecha de inicio** y **fecha de fin**\n"
+                "4. Activa el toggle **Periodo activo** (solo puede haber uno activo a la vez)\n"
+                "5. Guarda\n\n"
+                "_Tip: Al activar un nuevo periodo, el anterior se desactiva automaticamente._\n\n"
+                "Si quieres que yo lo cree, dime el nombre y las fechas de inicio y fin."
+            ),
+            "acciones": [{"texto": "Ir a Periodos", "ruta": "/periodos"}]
+        },
+        {
+            "claves": ['inscrib', 'inscripcion', 'inscripcion rapida'],
+            "respuesta": (
+                "Para inscribir un alumno:\n\n"
+                "**Si el alumno es nuevo:**\n"
+                "1. Ve a **Alumnos** -> **+ Nuevo Alumno**\n"
+                "2. Registra sus datos (la matricula se genera automaticamente)\n\n"
+                "**Para inscribirlo en un grupo:**\n"
+                "1. Ve a **Inscripciones Rapidas** en el menu\n"
+                "2. Busca al alumno por nombre o matricula\n"
+                "3. Selecciona el grupo o nivel\n"
+                "4. Confirma -> se crean sus 4 pagos automaticamente\n\n"
+                "_Tip: Si el alumno ya existe, ve directo al paso de Inscripciones Rapidas._\n\n"
+                "Si quieres que yo lo inscriba, dime su nombre o matricula y el grupo o nivel."
+            ),
+            "acciones": [{"texto": "Ir a Inscripciones", "ruta": "/inscripciones"}, {"texto": "Ir a Alumnos", "ruta": "/alumnos"}]
+        },
+        {
+            "claves": ['calificaci', 'notas', 'parcial'],
+            "respuesta": (
+                "Para registrar calificaciones:\n\n"
+                "**Maestros:**\n"
+                "1. Ve a **Calificaciones** en tu menu\n"
+                "2. Selecciona tu grupo\n"
+                "3. Elige el parcial (1, 2 o 3)\n"
+                "4. Ingresa la nota de cada alumno (escala 0-100, minimo aprobatorio: 70)\n"
+                "5. Guarda\n\n"
+                "**Coordinador - Carga masiva:**\n"
+                "1. Menu **Calificaciones** -> descarga plantilla CSV del grupo\n"
+                "2. Completa en Excel (columnas P1, P2, P3)\n"
+                "3. Sube el archivo -> revisa vista previa -> Confirmar\n\n"
+                "_Tip: El promedio se calcula automaticamente._"
+            ),
+            "acciones": [{"texto": "Ir a Calificaciones", "ruta": "/calificaciones"}]
+        },
+        {
+            "claves": ['asistencia'],
+            "respuesta": (
+                "Para registrar asistencias:\n\n"
+                "1. Ve al menu **Asistencias**\n"
+                "2. Selecciona tu grupo y la fecha de clase\n"
+                "3. Marca para cada alumno: Presente, Falta, Retardo o Justificada\n"
+                "4. Guarda\n\n"
+                "_Reglas del sistema:_\n"
+                "- 3 retardos = 1 falta automaticamente\n"
+                "- Minimo 80% de asistencia para aprobar nivel\n"
+                "- Puedes editar asistencias posteriores con justificacion"
+            ),
+            "acciones": [{"texto": "Ir a Asistencias", "ruta": "/asistencias"}]
+        },
+        {
+            "claves": ['maestro', 'personal', 'registr', 'nuevo maestro', 'agregar maestro'],
+            "respuesta": (
+                "Para registrar un maestro:\n\n"
+                "1. Ve al menu **Personal** en el panel izquierdo\n"
+                "2. Haz clic en **+ Nuevo Personal**\n"
+                "3. Llena los datos (nombre, correo, telefono)\n"
+                "4. Selecciona el rol: **Maestro**\n"
+                "5. Asigna los niveles que imparte (Basico, Intermedio, Avanzado...)\n"
+                "6. Guarda -> se envia invitacion por correo para que active su cuenta\n\n"
+                "_Tip: El maestro solo aparecera en grupos del nivel que tiene asignado._\n\n"
+                "Si quieres que yo lo registre, dime nombre completo, correo y niveles que imparte."
+            ),
+            "acciones": [{"texto": "Ir a Personal", "ruta": "/maestros"}]
+        },
+        {
+            "claves": ['grupo', 'crea grupo', 'nuevo grupo'],
+            "respuesta": (
+                "Para crear un grupo:\n\n"
+                "1. Ve al menu **Grupos**\n"
+                "2. Haz clic en **+ Nuevo Grupo**\n"
+                "3. Llena los datos:\n"
+                "   - **Codigo** (ej: B1-01, I2-03)\n"
+                "   - **Nivel** (Basico, Intermedio, Avanzado...)\n"
+                "   - **Periodo** activo\n"
+                "   - **Maestro** (opcional, puedes asignarlo despues)\n"
+                "   - **Cupo maximo**\n"
+                "   - **Horario** (dias y hora)\n"
+                "4. Guarda\n\n"
+                "_Tip: El turno (matutino/vespertino/sabatino) se determina automaticamente por los dias elegidos._\n\n"
+                "Si quieres que yo lo cree, dime el codigo, nivel y horario."
+            ),
+            "acciones": [{"texto": "Ir a Grupos", "ruta": "/grupos"}]
+        },
+        {
+            "claves": ['recibo', 'genera recibo', 'comprobante'],
+            "respuesta": (
+                "Para generar un recibo de pago:\n\n"
+                "1. Ve al menu **Pagos**\n"
+                "2. Busca el pago del alumno\n"
+                "3. Haz clic en el icono de **Recibo** o **Descargar**\n"
+                "4. Se genera el PDF automaticamente en Formato Universal (ventanilla de gobierno)\n\n"
+                "_Tip: Los recibos se generan automaticamente al registrar cada pago._\n\n"
+                "Si quieres el recibo de un alumno especifico, dime su nombre o matricula."
+            ),
+            "acciones": [{"texto": "Ir a Pagos", "ruta": "/pagos"}]
+        },
+    ]
+
+    if es_pregunta_de_guia:
+        for guia in GUIAS_COMO:
+            # Verificar si al menos 2 claves coinciden, o 1 si es muy especifica
+            claves = guia["claves"]
+            coincidencias = sum(1 for c in claves if c in pregunta_lower)
+            # Para claves compuestas (frases), verificar directamente
+            frase_completa = any(len(c) > 6 and c in pregunta_lower for c in claves)
+            if coincidencias >= 2 or frase_completa:
+                debug_print(f" [GUIA] Pregunta 'como' detectada, devolviendo guia sin LLM ni BD")
+                return True, {
+                    "success": True,
+                    "respuesta": guia["respuesta"],
+                    "acciones": guia.get("acciones", []),
+                    "sugerencias": []
+                }
+
+    # ========================================
     # Conectar a PostgreSQL con timeout corto
     try:
         db_config = {
@@ -1327,6 +1502,23 @@ def procesar_pregunta_ia(pregunta: str, contexto: Dict[str, Any], historial: Lis
         for msg in historial:
             role = "assistant" if msg.get("tipo") == "asistente" else "user"
             messages.append({"role": role, "content": msg.get("mensaje", "")})
+
+        # REGLA DE ORO: si la pregunta es "como hago X", inyectar recordatorio IRROMPIBLE
+        # para evitar que el LLM llame herramientas y bloquee por "no hay periodo activo"
+        if 'como' in pregunta_lower or 'c\u00f3mo' in pregunta_lower:
+            messages.append({
+                "role": "system",
+                "content": (
+                    "INSTRUCCION PRIORITARIA PARA ESTA RESPUESTA: "
+                    "El usuario pregunta COMO hacer algo. "
+                    "NO llames ninguna herramienta. "
+                    "NO pidas datos. "
+                    "NO menciones si hay periodo activo o no. "
+                    "RESPONDE DIRECTAMENTE con los pasos a seguir en el menu del sistema, "
+                    "y al final ofrece ayuda si el usuario quiere que lo hagas tu."
+                )
+            })
+
         messages.append({"role": "user", "content": pregunta})
         
         last_content = "He analizado los datos disponibles."
