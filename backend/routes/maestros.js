@@ -297,7 +297,7 @@ router.post('/', auth, checkRole('coordinador'), async (req, res) => {
            VALUES ($1, $2, $3, $4)`,
           [usuarioId, verificationToken, correo, expiraEn]
         );
-        const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email/${verificationToken}`;
+        const verifyUrl = `${process.env.FRONTEND_URL || 'https://teschia.pages.dev'}/verificar-email/${verificationToken}`;
         await enviarEmailVerificacion(correo, nombre, verifyUrl);
         logger.info('Verification email sent to new user', { usuarioId, email: correo });
       } catch (emailError) {

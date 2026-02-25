@@ -422,7 +422,7 @@ router.post('/solicitar-recuperacion', async (req, res) => {
     );
 
     // Construir URL de recuperación
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/restablecer-contrasena/${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://teschia.pages.dev'}/restablecer-contrasena/${token}`;
 
     // Enviar email con el enlace
     await enviarEmailRecuperacion(email, usuario.nombre || usuario.username, resetUrl);
@@ -533,7 +533,7 @@ router.post('/solicitar-verificacion-email', async (req, res) => {
     );
 
     // Enviar email
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email/${token}`;
+    const verifyUrl = `${process.env.FRONTEND_URL || 'https://teschia.pages.dev'}/verificar-email/${token}`;
     await enviarEmailVerificacion(usuario.email, usuario.nombre, verifyUrl);
 
     logger.info('Email verification sent', { userId: usuario.id, email: usuario.email });
