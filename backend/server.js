@@ -88,6 +88,8 @@ const commonOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://coordinacion-tescha.local',
+  'https://teschia.pages.dev',
+  'https://teschia.onrender.com',
   ...networkIPs.map(ip => `http://${ip}`),
   ...networkIPs.map(ip => `http://${ip}:3000`),
   process.env.FRONTEND_URL
