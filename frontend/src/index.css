@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos personalizados */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-tescha-blue text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm sm:text-base min-h-[44px] flex items-center justify-center;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm sm:text-base min-h-[44px] flex items-center justify-center;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md p-3 sm:p-4 md:p-6;
+  }
+  
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-tescha-blue focus:border-transparent text-base min-h-[44px];
+  }
+  
+  .table-container {
+    @apply overflow-x-auto shadow-md rounded-lg -mx-3 sm:mx-0;
+  }
+  
+  .table {
+    @apply min-w-full divide-y divide-gray-200;
+  }
+  
+  .table thead {
+    @apply bg-gray-50;
+  }
+  
+  .table th {
+    @apply px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap;
+  }
+  
+  .table td {
+    @apply px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 text-xs sm:text-sm text-gray-900;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-1.5 sm:px-2 md:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap;
+  }
+}
+
+/* Animaciones */
+@keyframes slide-left {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-left {
+  animation: slide-left 0.3s ease-out;
+}
+
+/* Badges adicionales */
+.badge-success {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.badge-danger {
+  @apply bg-red-100 text-red-800;
+}
+
+.badge-info {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-primary {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-sm {
+  @apply text-xs px-1.5 py-0.5;
+}
+
+/* Estilos adicionales para responsividad */
+@layer utilities {
+  /* Tablas responsivas - scroll horizontal en móviles */
+  .table-responsive {
+    @apply block w-full overflow-x-auto;
+  }
+  
+  .table-responsive table {
+    @apply min-w-full;
+  }
+  
+  /* Ocultar columnas no esenciales en móviles */
+  @media (max-width: 640px) {
+    .hide-mobile {
+      @apply hidden;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hide-tablet {
+      @apply hidden;
+    }
+  }
+  
+  /* Formularios responsivos */
+  .form-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+  
+  .form-grid-full {
+    @apply col-span-1 sm:col-span-2;
+  }
+  
+  /* Modal responsivo */
+  .modal-content {
+    @apply w-full max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-4xl mx-4 sm:mx-auto;
+  }
+  
+  /* Texto truncado con tooltip en móviles */
+  .text-truncate-mobile {
+    @apply truncate sm:whitespace-normal;
+  }
+}

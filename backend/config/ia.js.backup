@@ -1,0 +1,171 @@
+import Groq from 'groq-sdk';
+import axios from 'axios';
+import logger from '../utils/logger.js';
+
+// Configuración de múltiples llaves
+const GROQ_API_KEYS = (process.env.GROQ_API_KEY || '')
+  .split(',')
+  .map(k => k.trim())
+  .filter(Boolean);
+
+let currentGroqKeyIndex = 0;
+
+const OLLAMA_CONFIG = {
+  url: process.env.OLLAMA_URL || 'http://127.0.0.1:11434/v1/chat/completions',
+  model: process.env.OLLAMA_MODEL || 'phi3:mini' 
+};
+
+// Proveedor actual (por defecto Groq, fallback a Ollama)
+export let useOllama = false;
+
+// Cliente de Groq inicial
+let groq = new Groq({ apiKey: GROQ_API_KEYS[0] });
+
+/**
+ * Rota a la siguiente API Key de Groq si hay disponibles
+ */
+function rotarGroqKey() {
+  if (GROQ_API_KEYS.length > 1) {
+    currentGroqKeyIndex = (currentGroqKeyIndex + 1) % GROQ_API_KEYS.length;
+    groq = new Groq({ apiKey: GROQ_API_KEYS[currentGroqKeyIndex] });
+    logger.warn(`IA: Rotando a Groq Key #${currentGroqKeyIndex + 1}/${GROQ_API_KEYS.length}`);
+    return true;
+  }
+  return false;
+}
+
+// Modelos disponibles
+const MODELS = {
+  primary: 'llama-3.1-8b-instant',
+  secondary: 'llama-3.3-70b-versatile'
+};
+
+/**
+ * Función principal para ejecutar chat con soporte de herramientas
+ */
+export async function ejecutarChatAgente(messages, tools = [], maxTokens = 1500) {
+  try {
+    // Intento con GROQ (Primario y Secundario)
+    if (!useOllama) {
+      let currentModel = MODELS.primary;
+      let attempts = 0;
+      const maxAttempts = GROQ_API_KEYS.length * 2; // Intentar cada modelo con cada key
+
+      while (attempts < maxAttempts) {
+        try {
+          const saneMessages = messages.map(m => {
+            const msg = { role: m.role, content: m.content || "" };
+            if (m.tool_calls) {
+              msg.tool_calls = m.tool_calls.map(tc => {
+                let args = tc.function.arguments;
+                if (typeof args === 'object') args = JSON.stringify(args);
+                return {
+                  id: tc.id,
+                  type: 'function',
+                  function: { name: tc.function.name, arguments: args || "{}" }
+                };
+              });
+            }
+            if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
+            if (m.name) msg.name = m.name;
+            return msg;
+          });
+
+          const response = await groq.chat.completions.create({
+            messages: saneMessages,
+            model: currentModel,
+            tools: tools.length > 0 ? tools : undefined,
+            tool_choice: tools.length > 0 ? 'auto' : undefined,
+            temperature: 0.1,
+            max_tokens: maxTokens,
+          }, { timeout: 15000 });
+
+          return response.choices[0].message;
+        } catch (error) {
+          attempts++;
+          const status = error.status || error.response?.status;
+
+          // Si es 401 (Error de Key) o 429 (Límite), rotar la llave
+          if (status === 401 || status === 429) {
+            logger.warn(`IA: Error ${status} en ${currentModel} con Key #${currentGroqKeyIndex + 1}.`);
+            
+            if (rotarGroqKey()) {
+                // Si rotamos con éxito, volvemos a intentar con el modelo primario
+                currentModel = MODELS.primary;
+                await new Promise(r => setTimeout(r, 500));
+                continue;
+            } else {
+                // Si ya no hay llaves para rotar, intentamos cambiar de modelo si estábamos en el primario
+                if (currentModel === MODELS.primary) {
+                    currentModel = MODELS.secondary;
+                    continue;
+                }
+                // Si fallamos en todo, vamos a Ollama
+                useOllama = true;
+                break;
+            }
+          } else if (status === 400) {
+            logger.error(`IA: Error de formato (400). Intentando sin herramientas.`);
+            if (attempts < maxAttempts) {
+                tools = [];
+                continue;
+            }
+            throw error;
+          } else {
+            // Error de conexión o timeout
+            logger.warn(`IA: Fallo detectado (${error.message}). Rotando key...`);
+            if (rotarGroqKey()) continue;
+            
+            useOllama = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // Intento con OLLAMA (Local)
+    if (useOllama) {
+      logger.info(`IA: Usando Ollama (${OLLAMA_CONFIG.model})...`);
+      try {
+        const response = await axios.post(OLLAMA_CONFIG.url, {
+          model: OLLAMA_CONFIG.model,
+          messages: messages.map(m => ({
+             role: m.role, 
+             content: m.content || (m.tool_calls ? "Procesando herramientas..." : "")
+          })),
+          temperature: 0.1,
+          max_tokens: maxTokens
+        }, { timeout: 300000 });
+
+        if (response.data && response.data.choices) {
+          return response.data.choices[0].message;
+        }
+        throw new Error('Respuesta inválida de Ollama');
+      } catch (error) {
+        logger.error(`IA: Error en Ollama: ${error.message}`);
+        useOllama = false; // Reset para el siguiente intento por si vuelve el internet
+        throw new Error(`El sistema no puede procesar la solicitud en modo offline. Asegúrese de que Ollama esté funcionando.`);
+      }
+    }
+  } catch (error) {
+    logger.error('Error en ejecutarChatAgente:', error.message);
+    throw error;
+  }
+}
+
+export async function generarRespuestaIA(prompt, systemPrompt, maxTokens = 1000) {
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: prompt }
+  ];
+  const msg = await ejecutarChatAgente(messages, [], maxTokens);
+  return msg.content;
+}
+
+export function setIAProvider(provider) {
+  if (provider === 'ollama') useOllama = true;
+  else if (provider === 'groq') useOllama = false;
+  logger.info(`IA: Proveedor cambiado a ${useOllama ? 'Ollama' : 'Groq'}`);
+}
+
+export default { ejecutarChatAgente, generarRespuestaIA, setIAProvider, useOllama };

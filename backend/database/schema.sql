@@ -1,0 +1,1072 @@
+-- =============================================
+-- SISTEMA DE COORDINACIÓN DE INGLÉS - TESCHA
+-- Base de Datos PostgreSQL (VERSIÓN CORREGIDA)
+-- =============================================
+
+-- Extensiones necesarias
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- =============================================
+-- TABLA: USUARIOS (Sistema de autenticación)
+-- =============================================
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    rol VARCHAR(20) NOT NULL CHECK (rol IN ('coordinador', 'maestro', 'administrativo')),
+    activo BOOLEAN DEFAULT true,
+    cambio_password_requerido BOOLEAN DEFAULT false,
+    ultimo_acceso TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: PERMISOS POR ROL
+-- =============================================
+CREATE TABLE permisos_rol (
+    id SERIAL PRIMARY KEY,
+    rol VARCHAR(20) NOT NULL,
+    modulo VARCHAR(50) NOT NULL,
+    puede_ver BOOLEAN DEFAULT false,
+    puede_crear BOOLEAN DEFAULT false,
+    puede_editar BOOLEAN DEFAULT false,
+    puede_eliminar BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(rol, modulo)
+);
+
+-- =============================================
+-- TABLA: NIVELES (Sistema Institucional)
+-- =============================================
+CREATE TABLE niveles (
+    id SERIAL PRIMARY KEY,
+    codigo VARCHAR(10) UNIQUE NOT NULL,
+    nombre VARCHAR(50) NOT NULL,
+    descripcion TEXT,
+    orden INT UNIQUE NOT NULL,
+    horas_totales INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: PERÍODOS ACADÉMICOS
+-- =============================================
+CREATE TABLE periodos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('escolarizado', 'semestral', 'intensivo')),
+    fecha_inicio_inscripciones DATE NOT NULL,
+    fecha_fin_inscripciones DATE NOT NULL,
+    fecha_inicio_clases DATE NOT NULL,
+    fecha_fin_clases DATE NOT NULL,
+    fecha_inicio_examenes DATE,
+    fecha_fin_examenes DATE,
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fechas_validas CHECK (
+        fecha_inicio_inscripciones < fecha_fin_inscripciones AND
+        fecha_fin_inscripciones <= fecha_inicio_clases AND
+        fecha_inicio_clases < fecha_fin_clases
+    )
+);
+
+-- =============================================
+-- SALONES ELIMINADOS - Ya no se usan en el sistema
+-- =============================================
+
+-- =============================================
+-- TABLA: MAESTROS
+-- =============================================
+CREATE TABLE maestros (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT UNIQUE REFERENCES usuarios(id) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    apellido_paterno VARCHAR(100) NOT NULL,
+    apellido_materno VARCHAR(100),
+    correo VARCHAR(150) UNIQUE NOT NULL,
+    telefono VARCHAR(20),
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: NIVELES QUE IMPARTE EL MAESTRO
+-- =============================================
+CREATE TABLE maestros_niveles (
+    id SERIAL PRIMARY KEY,
+    maestro_id INT REFERENCES maestros(id) ON DELETE CASCADE,
+    nivel_id INT REFERENCES niveles(id) ON DELETE CASCADE,
+    fecha_asignacion DATE DEFAULT CURRENT_DATE,
+    activo BOOLEAN DEFAULT true,
+    UNIQUE(maestro_id, nivel_id)
+);
+
+-- =============================================
+-- TABLA: ALUMNOS
+-- =============================================
+CREATE TABLE alumnos (
+    id SERIAL PRIMARY KEY,
+    tipo_alumno VARCHAR(20) NOT NULL CHECK (tipo_alumno IN ('interno', 'externo')),
+    matricula VARCHAR(50) UNIQUE,
+    nombre VARCHAR(100) NOT NULL,
+    apellido_paterno VARCHAR(100) NOT NULL,
+    apellido_materno VARCHAR(100),
+    correo VARCHAR(150) UNIQUE NOT NULL,
+    telefono VARCHAR(20),
+    carrera VARCHAR(100),
+    semestre INT CHECK (semestre BETWEEN 1 AND 12),
+    nivel_id INT REFERENCES niveles(id) ON DELETE SET NULL,
+    estatus VARCHAR(20) DEFAULT 'activo' CHECK (estatus IN ('activo', 'baja_temporal', 'baja_definitiva', 'egresado')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: GRUPOS
+-- =============================================
+CREATE TABLE grupos (
+    id SERIAL PRIMARY KEY,
+    codigo VARCHAR(50) UNIQUE NOT NULL,
+    periodo_id INT REFERENCES periodos(id) ON DELETE CASCADE,
+    nivel_id INT REFERENCES niveles(id) ON DELETE CASCADE,
+    maestro_id INT REFERENCES maestros(id) ON DELETE SET NULL,
+    modalidad VARCHAR(20) CHECK (modalidad IN ('escolarizado', 'semestral', 'intensivo')),
+    cupo_maximo INT NOT NULL CHECK (cupo_maximo > 0),
+    cupo_minimo INT DEFAULT 5 CHECK (cupo_minimo > 0),
+    costo_inscripcion DECIMAL(10, 2),
+    activo BOOLEAN DEFAULT true,
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT cupos_validos CHECK (cupo_minimo <= cupo_maximo)
+);
+
+-- =============================================
+-- TABLA: HORARIOS DE GRUPOS
+-- =============================================
+CREATE TABLE grupos_horarios (
+    id SERIAL PRIMARY KEY,
+    grupo_id INT REFERENCES grupos(id) ON DELETE CASCADE,
+    dia VARCHAR(10) NOT NULL CHECK (dia IN ('lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo')),
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(grupo_id, dia, hora_inicio),
+    CONSTRAINT horario_valido CHECK (hora_inicio < hora_fin)
+);
+
+-- =============================================
+-- TABLA: INSCRIPCIONES (Alumnos en Grupos)
+-- =============================================
+CREATE TABLE inscripciones (
+    id SERIAL PRIMARY KEY,
+    alumno_id INT REFERENCES alumnos(id) ON DELETE CASCADE,
+    grupo_id INT REFERENCES grupos(id) ON DELETE CASCADE,
+    periodo_id INT REFERENCES periodos(id) ON DELETE CASCADE,
+    fecha_inscripcion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estatus VARCHAR(30) DEFAULT 'activo' CHECK (estatus IN ('activo', 'desercion', 'aprobado', 'reprobado', 'cancelado', 'inactivo')),
+    es_recursador BOOLEAN DEFAULT false,
+    calificacion_final DECIMAL(5, 2),
+    porcentaje_asistencia DECIMAL(5, 2),
+    observaciones TEXT,
+    fecha_baja DATE,
+    motivo_baja TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(alumno_id, grupo_id, periodo_id)
+);
+
+-- =============================================
+-- TABLA: TARIFAS
+-- =============================================
+CREATE TABLE tarifas (
+    id SERIAL PRIMARY KEY,
+    periodo_id INT REFERENCES periodos(id) ON DELETE CASCADE,
+    nivel_id INT REFERENCES niveles(id) ON DELETE CASCADE,
+    tipo_alumno VARCHAR(20) CHECK (tipo_alumno IN ('interno', 'externo')),
+    monto_inscripcion DECIMAL(10, 2) NOT NULL,
+    monto_mensual DECIMAL(10, 2),
+    numero_pagos INT DEFAULT 1,
+    vigente BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(periodo_id, nivel_id, tipo_alumno)
+);
+
+-- =============================================
+-- TABLA: PAGOS Y COLEGIATURAS
+-- =============================================
+CREATE TABLE pagos (
+    id SERIAL PRIMARY KEY,
+    inscripcion_id INT REFERENCES inscripciones(id) ON DELETE CASCADE,
+    numero_pago INT NOT NULL,
+    concepto VARCHAR(100) NOT NULL,
+    monto DECIMAL(10, 2) NOT NULL,
+    fecha_vencimiento DATE NOT NULL,
+    fecha_pago TIMESTAMP,
+    estatus VARCHAR(20) DEFAULT 'pendiente' CHECK (estatus IN ('pendiente', 'pagado', 'prorroga')),
+    metodo_pago VARCHAR(50) DEFAULT 'FORMATO UNIVERSAL',
+    referencia VARCHAR(100),
+    comprobante_url VARCHAR(255),
+    recibo_numero VARCHAR(50) UNIQUE,
+    descuento DECIMAL(10, 2) DEFAULT 0,
+    monto_final DECIMAL(10, 2),
+    notas TEXT,
+    registrado_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: PRÓRROGAS
+-- =============================================
+CREATE TABLE prorrogas (
+    id SERIAL PRIMARY KEY,
+    pago_id INT REFERENCES pagos(id) ON DELETE CASCADE,
+    motivo TEXT NOT NULL,
+    documentos_adjuntos TEXT,
+    fecha_limite_original DATE NOT NULL,
+    fecha_limite_nueva DATE NOT NULL,
+    estatus VARCHAR(20) DEFAULT 'pendiente' CHECK (estatus IN ('pendiente', 'aprobada', 'rechazada', 'vencida')),
+    solicitada_por INT REFERENCES alumnos(id) ON DELETE CASCADE,
+    revisada_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_revision TIMESTAMP,
+    observaciones_coordinador TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fecha_prorroga_valida CHECK (fecha_limite_nueva > fecha_limite_original)
+);
+
+-- =============================================
+-- TABLA: COMPONENTES DE EVALUACIÓN
+-- =============================================
+CREATE TABLE componentes_evaluacion (
+    id SERIAL PRIMARY KEY,
+    nivel_id INT REFERENCES niveles(id) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    tipo VARCHAR(50) CHECK (tipo IN ('examen', 'tarea', 'participacion', 'proyecto', 'oral', 'escrito')),
+    porcentaje DECIMAL(5, 2) NOT NULL CHECK (porcentaje BETWEEN 0 AND 100),
+    parcial INT CHECK (parcial BETWEEN 1 AND 4),
+    descripcion TEXT,
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: CALIFICACIONES DETALLADAS
+-- =============================================
+CREATE TABLE calificaciones (
+    id SERIAL PRIMARY KEY,
+    inscripcion_id INT REFERENCES inscripciones(id) ON DELETE CASCADE,
+    componente_id INT REFERENCES componentes_evaluacion(id) ON DELETE CASCADE,
+    calificacion DECIMAL(5, 2) NOT NULL CHECK (calificacion BETWEEN 0 AND 100),
+    fecha_evaluacion DATE,
+    observaciones TEXT,
+    capturada_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(inscripcion_id, componente_id)
+);
+
+-- =============================================
+-- TABLA: CALIFICACIONES POR PARCIAL
+-- =============================================
+CREATE TABLE calificaciones_parciales (
+    id SERIAL PRIMARY KEY,
+    inscripcion_id INT REFERENCES inscripciones(id) ON DELETE CASCADE,
+    parcial INT NOT NULL CHECK (parcial BETWEEN 1 AND 4),
+    calificacion DECIMAL(5, 2) NOT NULL CHECK (calificacion BETWEEN 0 AND 100),
+    fecha_captura DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(inscripcion_id, parcial)
+);
+
+-- =============================================
+-- TABLA: ASISTENCIAS
+-- =============================================
+CREATE TABLE asistencias (
+    id SERIAL PRIMARY KEY,
+    inscripcion_id INT REFERENCES inscripciones(id) ON DELETE CASCADE,
+    fecha DATE NOT NULL,
+    presente BOOLEAN DEFAULT false,
+    retardo BOOLEAN DEFAULT false,
+    minutos_retardo INT,
+    justificada BOOLEAN DEFAULT false,
+    tipo_justificacion VARCHAR(50),
+    documento_justificacion_url VARCHAR(255),
+    observaciones TEXT,
+    registrada_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(inscripcion_id, fecha)
+);
+
+-- =============================================
+-- TABLA: EXÁMENES DE DIAGNÓSTICO/COLOCACIÓN
+-- =============================================
+CREATE TABLE examenes_diagnostico (
+    id SERIAL PRIMARY KEY,
+    alumno_id INT REFERENCES alumnos(id) ON DELETE CASCADE,
+    fecha_examen DATE NOT NULL,
+    tipo_examen VARCHAR(50) DEFAULT 'colocacion',
+    puntaje_reading DECIMAL(5, 2),
+    puntaje_writing DECIMAL(5, 2),
+    puntaje_listening DECIMAL(5, 2),
+    puntaje_speaking DECIMAL(5, 2),
+    puntaje_grammar DECIMAL(5, 2),
+    puntaje_total DECIMAL(5, 2),
+    puntaje_maximo DECIMAL(5, 2),
+    nivel_recomendado_id INT REFERENCES niveles(id) ON DELETE SET NULL,
+    observaciones TEXT,
+    aplicado_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: CERTIFICACIONES EXTERNAS
+-- =============================================
+CREATE TABLE certificaciones (
+    id SERIAL PRIMARY KEY,
+    alumno_id INT REFERENCES alumnos(id) ON DELETE CASCADE,
+    tipo_examen VARCHAR(100) NOT NULL,
+    nivel_obtenido VARCHAR(50),
+    fecha_aplicacion DATE,
+    fecha_vencimiento DATE,
+    resultado VARCHAR(50),
+    puntaje VARCHAR(50),
+    puntaje_reading VARCHAR(20),
+    puntaje_writing VARCHAR(20),
+    puntaje_listening VARCHAR(20),
+    puntaje_speaking VARCHAR(20),
+    costo DECIMAL(10, 2),
+    certificado_url VARCHAR(255),
+    numero_certificado VARCHAR(100),
+    institucion_emisora VARCHAR(200),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: CONSTANCIAS
+-- =============================================
+CREATE TABLE constancias (
+    id SERIAL PRIMARY KEY,
+    alumno_id INT REFERENCES alumnos(id) ON DELETE CASCADE,
+    tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('nivel_completado', 'curso_terminado', 'calificaciones', 'asistencia')),
+    nivel_id INT REFERENCES niveles(id) ON DELETE SET NULL,
+    periodo_id INT REFERENCES periodos(id) ON DELETE SET NULL,
+    fecha_emision DATE DEFAULT CURRENT_DATE,
+    folio VARCHAR(100) UNIQUE NOT NULL,
+    pdf_url VARCHAR(255),
+    firmada_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    observaciones TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: EVENTOS Y ACTIVIDADES
+-- =============================================
+CREATE TABLE eventos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    tipo VARCHAR(50) CHECK (tipo IN ('conferencia', 'taller', 'examen_extraordinario', 'ceremonia', 'competencia', 'intercambio')),
+    descripcion TEXT,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME,
+    nivel_id INT REFERENCES niveles(id) ON DELETE SET NULL,
+    cupo_maximo INT,
+    requiere_inscripcion BOOLEAN DEFAULT false,
+    costo DECIMAL(10, 2) DEFAULT 0,
+    responsable_id INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLA: INSCRIPCIONES A EVENTOS
+-- =============================================
+CREATE TABLE eventos_inscripciones (
+    id SERIAL PRIMARY KEY,
+    evento_id INT REFERENCES eventos(id) ON DELETE CASCADE,
+    alumno_id INT REFERENCES alumnos(id) ON DELETE CASCADE,
+    fecha_inscripcion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    asistio BOOLEAN DEFAULT false,
+    calificacion DECIMAL(5, 2),
+    observaciones TEXT,
+    UNIQUE(evento_id, alumno_id)
+);
+
+
+
+
+
+-- =============================================
+-- TABLA: ESTADÍSTICAS POR PERÍODO
+-- =============================================
+CREATE TABLE estadisticas_periodo (
+    id SERIAL PRIMARY KEY,
+    periodo_id INT REFERENCES periodos(id) ON DELETE CASCADE,
+    total_alumnos_internos INT DEFAULT 0,
+    total_alumnos_externos INT DEFAULT 0,
+    total_alumnos INT DEFAULT 0,
+    total_grupos INT DEFAULT 0,
+    total_maestros_activos INT DEFAULT 0,
+    ingresos_totales DECIMAL(12, 2) DEFAULT 0,
+    ingresos_inscripciones DECIMAL(12, 2) DEFAULT 0,
+    ingresos_mensualidades DECIMAL(12, 2) DEFAULT 0,
+    tasa_desercion DECIMAL(5, 2) DEFAULT 0,
+    tasa_aprobacion DECIMAL(5, 2) DEFAULT 0,
+    promedio_calificaciones DECIMAL(5, 2) DEFAULT 0,
+    promedio_asistencia DECIMAL(5, 2) DEFAULT 0,
+    fecha_calculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(periodo_id)
+);
+
+-- =============================================
+-- TABLA: TENDENCIAS MENSUALES
+-- =============================================
+CREATE TABLE tendencias_mensuales (
+    id SERIAL PRIMARY KEY,
+    periodo_id INT REFERENCES periodos(id) ON DELETE CASCADE,
+    mes INT CHECK (mes BETWEEN 1 AND 12),
+    anio INT,
+    nuevos_alumnos_internos INT DEFAULT 0,
+    nuevos_alumnos_externos INT DEFAULT 0,
+    bajas_alumnos INT DEFAULT 0,
+    ingresos_mes DECIMAL(12, 2) DEFAULT 0,
+    egresos_mes DECIMAL(12, 2) DEFAULT 0,
+    pagos_realizados INT DEFAULT 0,
+    pagos_vencidos INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(periodo_id, mes, anio)
+);
+
+-- =============================================
+-- TABLA: AUDITORÍA
+-- =============================================
+CREATE TABLE auditoria (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT REFERENCES usuarios(id) ON DELETE SET NULL,
+    accion VARCHAR(100) NOT NULL,
+    tabla VARCHAR(50) NOT NULL,
+    registro_id INT,
+    datos_anteriores JSONB,
+    datos_nuevos JSONB,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- ÍNDICES PARA OPTIMIZACIÓN
+-- =============================================
+
+CREATE INDEX idx_usuarios_username ON usuarios(username);
+CREATE INDEX idx_usuarios_rol ON usuarios(rol);
+CREATE INDEX idx_usuarios_activo ON usuarios(activo);
+
+CREATE INDEX idx_alumnos_matricula ON alumnos(matricula);
+CREATE INDEX idx_alumnos_tipo ON alumnos(tipo_alumno);
+CREATE INDEX idx_alumnos_nivel ON alumnos(nivel_id);
+CREATE INDEX idx_alumnos_estatus ON alumnos(estatus);
+CREATE INDEX idx_alumnos_correo ON alumnos(correo);
+
+CREATE INDEX idx_maestros_correo ON maestros(correo);
+CREATE INDEX idx_maestros_activo ON maestros(activo);
+
+CREATE INDEX idx_grupos_periodo ON grupos(periodo_id);
+CREATE INDEX idx_grupos_nivel ON grupos(nivel_id);
+CREATE INDEX idx_grupos_maestro ON grupos(maestro_id);
+CREATE INDEX idx_grupos_activo ON grupos(activo);
+
+CREATE INDEX idx_inscripciones_alumno ON inscripciones(alumno_id);
+CREATE INDEX idx_inscripciones_grupo ON inscripciones(grupo_id);
+CREATE INDEX idx_inscripciones_periodo ON inscripciones(periodo_id);
+CREATE INDEX idx_inscripciones_estatus ON inscripciones(estatus);
+
+CREATE INDEX idx_pagos_inscripcion ON pagos(inscripcion_id);
+CREATE INDEX idx_pagos_estatus ON pagos(estatus);
+CREATE INDEX idx_pagos_fecha_vencimiento ON pagos(fecha_vencimiento);
+
+CREATE INDEX idx_asistencias_inscripcion ON asistencias(inscripcion_id);
+CREATE INDEX idx_asistencias_fecha ON asistencias(fecha);
+
+CREATE INDEX idx_calificaciones_inscripcion ON calificaciones(inscripcion_id);
+CREATE INDEX idx_calificaciones_componente ON calificaciones(componente_id);
+
+-- =============================================
+-- VISTAS ÚTILES
+-- =============================================
+
+CREATE VIEW maestros_completo AS
+SELECT 
+    m.*,
+    CONCAT(m.nombre, ' ', m.apellido_paterno, ' ', COALESCE(m.apellido_materno, '')) as nombre_completo
+FROM maestros m;
+
+CREATE VIEW alumnos_completo AS
+SELECT 
+    a.*,
+    CONCAT(a.nombre, ' ', a.apellido_paterno, ' ', COALESCE(a.apellido_materno, '')) as nombre_completo,
+    n.nombre as nivel_nombre,
+    n.codigo as nivel_codigo
+FROM alumnos a
+LEFT JOIN niveles n ON a.nivel_id = n.id;
+
+CREATE VIEW grupos_detalle AS
+SELECT 
+    g.*,
+    n.nombre as nivel_nombre,
+    n.codigo as nivel_codigo,
+    p.nombre as periodo_nombre,
+    CONCAT(m.nombre, ' ', m.apellido_paterno) as maestro_nombre,
+    (SELECT COUNT(*) FROM inscripciones i WHERE i.grupo_id = g.id AND i.estatus = 'activo') as inscritos_actual
+FROM grupos g
+LEFT JOIN niveles n ON g.nivel_id = n.id
+LEFT JOIN periodos p ON g.periodo_id = p.id
+LEFT JOIN maestros m ON g.maestro_id = m.id;
+
+CREATE VIEW pagos_pendientes AS
+SELECT 
+    p.*,
+    i.alumno_id,
+    CONCAT(a.nombre, ' ', a.apellido_paterno) as alumno_nombre,
+    a.correo as alumno_correo,
+    a.tipo_alumno,
+    g.codigo as grupo_codigo,
+    (CURRENT_DATE - p.fecha_vencimiento) as dias_vencido
+FROM pagos p
+JOIN inscripciones i ON p.inscripcion_id = i.id
+JOIN alumnos a ON i.alumno_id = a.id
+JOIN grupos g ON i.grupo_id = g.id
+WHERE p.estatus IN ('pendiente', 'vencido');
+
+CREATE VIEW dashboard_finanzas AS
+SELECT 
+    p.id as periodo_id,
+    p.nombre as periodo_nombre,
+    COUNT(DISTINCT i.alumno_id) as total_alumnos,
+    SUM(CASE WHEN pag.estatus = 'pagado' THEN pag.monto_final ELSE 0 END) as ingresos_totales,
+    SUM(CASE WHEN pag.estatus IN ('pendiente', 'vencido') THEN pag.monto_final ELSE 0 END) as cuentas_por_cobrar,
+    COUNT(CASE WHEN pag.estatus = 'vencido' THEN 1 END) as pagos_vencidos
+FROM periodos p
+LEFT JOIN inscripciones i ON p.id = i.periodo_id
+LEFT JOIN pagos pag ON i.id = pag.inscripcion_id
+WHERE p.activo = true
+GROUP BY p.id, p.nombre;
+
+-- =============================================
+-- FUNCIONES Y TRIGGERS
+-- =============================================
+
+CREATE OR REPLACE FUNCTION actualizar_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_actualizar_usuarios BEFORE UPDATE ON usuarios
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+CREATE TRIGGER trigger_actualizar_alumnos BEFORE UPDATE ON alumnos
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+CREATE TRIGGER trigger_actualizar_maestros BEFORE UPDATE ON maestros
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+CREATE TRIGGER trigger_actualizar_grupos BEFORE UPDATE ON grupos
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+CREATE TRIGGER trigger_actualizar_inscripciones BEFORE UPDATE ON inscripciones
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+CREATE TRIGGER trigger_actualizar_pagos BEFORE UPDATE ON pagos
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+CREATE TRIGGER trigger_actualizar_salones BEFORE UPDATE ON salones
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+CREATE TRIGGER trigger_actualizar_periodos BEFORE UPDATE ON periodos
+FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+
+-- Función: Validar cupo de grupo
+CREATE OR REPLACE FUNCTION validar_cupo_grupo()
+RETURNS TRIGGER AS $$
+DECLARE
+    inscritos_actuales INT;
+    cupo_max INT;
+BEGIN
+    SELECT COUNT(*) INTO inscritos_actuales
+    FROM inscripciones
+    WHERE grupo_id = NEW.grupo_id AND estatus = 'activo';
+    
+    SELECT cupo_maximo INTO cupo_max
+    FROM grupos
+    WHERE id = NEW.grupo_id;
+    
+    IF inscritos_actuales >= cupo_max THEN
+        RAISE EXCEPTION 'El grupo % ha alcanzado su cupo máximo de % alumnos', 
+            NEW.grupo_id, cupo_max;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_cupo
+BEFORE INSERT ON inscripciones
+FOR EACH ROW EXECUTE FUNCTION validar_cupo_grupo();
+
+-- Función: Calcular porcentaje de asistencia
+CREATE OR REPLACE FUNCTION calcular_porcentaje_asistencia()
+RETURNS TRIGGER AS $$
+DECLARE
+    total_clases INT;
+    asistencias_presentes INT;
+    porcentaje DECIMAL(5,2);
+BEGIN
+    SELECT COUNT(*) INTO total_clases
+    FROM asistencias
+    WHERE inscripcion_id = NEW.id;
+    
+    SELECT COUNT(*) INTO asistencias_presentes
+    FROM asistencias
+    WHERE inscripcion_id = NEW.id AND presente = true;
+    
+    IF total_clases > 0 THEN
+        porcentaje := (asistencias_presentes::DECIMAL / total_clases) * 100;
+        NEW.porcentaje_asistencia := porcentaje;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_calcular_asistencia
+BEFORE UPDATE ON inscripciones
+FOR EACH ROW EXECUTE FUNCTION calcular_porcentaje_asistencia();
+
+-- Función: Registrar en auditoría
+CREATE OR REPLACE FUNCTION registrar_auditoria()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        INSERT INTO auditoria (accion, tabla, registro_id, datos_anteriores)
+        VALUES ('DELETE', TG_TABLE_NAME, OLD.id, row_to_json(OLD));
+        RETURN OLD;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO auditoria (accion, tabla, registro_id, datos_anteriores, datos_nuevos)
+        VALUES ('UPDATE', TG_TABLE_NAME, NEW.id, row_to_json(OLD), row_to_json(NEW));
+        RETURN NEW;
+    ELSIF (TG_OP = 'INSERT') THEN
+        INSERT INTO auditoria (accion, tabla, registro_id, datos_nuevos)
+        VALUES ('INSERT', TG_TABLE_NAME, NEW.id, row_to_json(NEW));
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_auditoria_alumnos
+AFTER INSERT OR UPDATE OR DELETE ON alumnos
+FOR EACH ROW EXECUTE FUNCTION registrar_auditoria();
+
+CREATE TRIGGER trigger_auditoria_maestros
+AFTER INSERT OR UPDATE OR DELETE ON maestros
+FOR EACH ROW EXECUTE FUNCTION registrar_auditoria();
+
+CREATE TRIGGER trigger_auditoria_grupos
+AFTER INSERT OR UPDATE OR DELETE ON grupos
+FOR EACH ROW EXECUTE FUNCTION registrar_auditoria();
+
+CREATE TRIGGER trigger_auditoria_inscripciones
+AFTER INSERT OR UPDATE OR DELETE ON inscripciones
+FOR EACH ROW EXECUTE FUNCTION registrar_auditoria();
+
+CREATE TRIGGER trigger_auditoria_pagos
+AFTER INSERT OR UPDATE OR DELETE ON pagos
+FOR EACH ROW EXECUTE FUNCTION registrar_auditoria();
+
+-- Función: Actualizar estatus de pago vencido
+CREATE OR REPLACE FUNCTION actualizar_pagos_vencidos()
+RETURNS void AS $$
+BEGIN
+    UPDATE pagos
+    SET estatus = 'vencido'
+    WHERE estatus = 'pendiente'
+    AND fecha_vencimiento < CURRENT_DATE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Función: Calcular monto final de pago con descuento
+CREATE OR REPLACE FUNCTION calcular_monto_final_pago()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.monto_final := NEW.monto - COALESCE(NEW.descuento, 0);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_calcular_monto_final
+BEFORE INSERT OR UPDATE ON pagos
+FOR EACH ROW EXECUTE FUNCTION calcular_monto_final_pago();
+
+-- Función: Validar traslape de horarios
+CREATE OR REPLACE FUNCTION validar_traslape_horarios()
+RETURNS TRIGGER AS $$
+DECLARE
+    traslape_count INT;
+BEGIN
+    SELECT COUNT(*) INTO traslape_count
+    FROM grupos_horarios gh1
+    JOIN grupos g1 ON gh1.grupo_id = g1.id
+    WHERE gh1.grupo_id != NEW.grupo_id
+    AND g1.salon_id = (SELECT salon_id FROM grupos WHERE id = NEW.grupo_id)
+    AND g1.periodo_id = (SELECT periodo_id FROM grupos WHERE id = NEW.grupo_id)
+    AND gh1.dia = NEW.dia
+    AND (
+        (NEW.hora_inicio >= gh1.hora_inicio AND NEW.hora_inicio < gh1.hora_fin) OR
+        (NEW.hora_fin > gh1.hora_inicio AND NEW.hora_fin <= gh1.hora_fin) OR
+        (NEW.hora_inicio <= gh1.hora_inicio AND NEW.hora_fin >= gh1.hora_fin)
+    );
+    
+    IF traslape_count > 0 THEN
+        RAISE EXCEPTION 'Conflicto de horario: El salón ya está ocupado en este horario';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_traslape_horarios
+BEFORE INSERT OR UPDATE ON grupos_horarios
+FOR EACH ROW EXECUTE FUNCTION validar_traslape_horarios();
+
+-- Función: Validar maestro nivel
+CREATE OR REPLACE FUNCTION validar_maestro_nivel()
+RETURNS TRIGGER AS $$
+DECLARE
+    puede_impartir BOOLEAN;
+BEGIN
+    IF NEW.maestro_id IS NOT NULL THEN
+        SELECT EXISTS(
+            SELECT 1 FROM maestros_niveles
+            WHERE maestro_id = NEW.maestro_id
+            AND nivel_id = NEW.nivel_id
+            AND activo = true
+        ) INTO puede_impartir;
+        
+        IF NOT puede_impartir THEN
+            RAISE EXCEPTION 'El maestro no está certificado para impartir este nivel';
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_maestro_nivel
+BEFORE INSERT OR UPDATE ON grupos
+FOR EACH ROW EXECUTE FUNCTION validar_maestro_nivel();
+
+-- Función: Actualizar estadísticas del período
+CREATE OR REPLACE FUNCTION actualizar_estadisticas_periodo(p_periodo_id INT)
+RETURNS void AS $$
+BEGIN
+    INSERT INTO estadisticas_periodo (
+        periodo_id,
+        total_alumnos_internos,
+        total_alumnos_externos,
+        total_alumnos,
+        total_grupos,
+        total_maestros_activos,
+        ingresos_totales,
+        ingresos_inscripciones,
+        ingresos_mensualidades,
+        fecha_calculo
+    )
+    SELECT 
+        p_periodo_id,
+        COUNT(DISTINCT CASE WHEN a.tipo_alumno = 'interno' THEN i.alumno_id END),
+        COUNT(DISTINCT CASE WHEN a.tipo_alumno = 'externo' THEN i.alumno_id END),
+        COUNT(DISTINCT i.alumno_id),
+        COUNT(DISTINCT g.id),
+        COUNT(DISTINCT g.maestro_id),
+        COALESCE(SUM(CASE WHEN p.estatus = 'pagado' THEN p.monto_final ELSE 0 END), 0),
+        COALESCE(SUM(CASE WHEN p.estatus = 'pagado' AND p.numero_pago = 1 THEN p.monto_final ELSE 0 END), 0),
+        COALESCE(SUM(CASE WHEN p.estatus = 'pagado' AND p.numero_pago > 1 THEN p.monto_final ELSE 0 END), 0),
+        CURRENT_TIMESTAMP
+    FROM inscripciones i
+    JOIN alumnos a ON i.alumno_id = a.id
+    JOIN grupos g ON i.grupo_id = g.id
+    LEFT JOIN pagos p ON i.id = p.inscripcion_id
+    WHERE i.periodo_id = p_periodo_id
+    ON CONFLICT (periodo_id) 
+    DO UPDATE SET
+        total_alumnos_internos = EXCLUDED.total_alumnos_internos,
+        total_alumnos_externos = EXCLUDED.total_alumnos_externos,
+        total_alumnos = EXCLUDED.total_alumnos,
+        total_grupos = EXCLUDED.total_grupos,
+        total_maestros_activos = EXCLUDED.total_maestros_activos,
+        ingresos_totales = EXCLUDED.ingresos_totales,
+        ingresos_inscripciones = EXCLUDED.ingresos_inscripciones,
+        ingresos_mensualidades = EXCLUDED.ingresos_mensualidades,
+        fecha_calculo = CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =============================================
+-- FUNCIONES DE REPORTES
+-- =============================================
+
+CREATE OR REPLACE FUNCTION obtener_estadisticas_grupo(p_grupo_id INT)
+RETURNS TABLE (
+    total_inscritos BIGINT,
+    promedio_calificaciones DECIMAL,
+    promedio_asistencia DECIMAL,
+    aprobados BIGINT,
+    reprobados BIGINT,
+    deserciones BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COUNT(*)::BIGINT as total_inscritos,
+        AVG(i.calificacion_final) as promedio_calificaciones,
+        AVG(i.porcentaje_asistencia) as promedio_asistencia,
+        COUNT(CASE WHEN i.estatus = 'aprobado' THEN 1 END)::BIGINT as aprobados,
+        COUNT(CASE WHEN i.estatus = 'reprobado' THEN 1 END)::BIGINT as reprobados,
+        COUNT(CASE WHEN i.estatus = 'desercion' THEN 1 END)::BIGINT as deserciones
+    FROM inscripciones i
+    WHERE i.grupo_id = p_grupo_id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION obtener_alumnos_con_adeudos()
+RETURNS TABLE (
+    alumno_id INT,
+    nombre_completo TEXT,
+    correo VARCHAR,
+    telefono VARCHAR,
+    total_adeudo DECIMAL,
+    pagos_pendientes BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        a.id,
+        CONCAT(a.nombre, ' ', a.apellido_paterno, ' ', COALESCE(a.apellido_materno, '')) as nombre_completo,
+        a.correo,
+        a.celular,
+        SUM(p.monto_final) as total_adeudo,
+        COUNT(p.id)::BIGINT as pagos_pendientes
+    FROM alumnos a
+    JOIN inscripciones i ON a.id = i.alumno_id
+    JOIN pagos p ON i.id = p.inscripcion_id
+    WHERE p.estatus IN ('pendiente', 'vencido')
+    GROUP BY a.id, a.nombre, a.apellido_paterno, a.apellido_materno, a.correo, a.celular
+    HAVING SUM(p.monto_final) > 0
+    ORDER BY total_adeudo DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION reporte_ocupacion_salones(p_periodo_id INT)
+RETURNS TABLE (
+    salon_codigo VARCHAR,
+    salon_nombre VARCHAR,
+    capacidad INT,
+    grupos_asignados BIGINT,
+    horas_ocupadas BIGINT,
+    porcentaje_ocupacion DECIMAL
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        s.codigo,
+        s.nombre,
+        s.capacidad,
+        COUNT(DISTINCT g.id)::BIGINT as grupos_asignados,
+        COUNT(gh.id)::BIGINT as horas_ocupadas,
+        (COUNT(gh.id)::DECIMAL / 48 * 100) as porcentaje_ocupacion
+    FROM salones s
+    LEFT JOIN grupos g ON s.id = g.salon_id AND g.periodo_id = p_periodo_id
+    LEFT JOIN grupos_horarios gh ON g.id = gh.grupo_id
+    WHERE s.estatus = 'disponible'
+    GROUP BY s.id, s.codigo, s.nombre, s.capacidad
+    ORDER BY porcentaje_ocupacion DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION comparar_periodos(p_periodo_actual INT, p_periodo_anterior INT)
+RETURNS TABLE (
+    concepto VARCHAR,
+    periodo_anterior DECIMAL,
+    periodo_actual DECIMAL,
+    diferencia DECIMAL,
+    porcentaje_cambio DECIMAL
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        'Alumnos Totales'::VARCHAR,
+        COALESCE(ep1.total_alumnos::DECIMAL, 0),
+        COALESCE(ep2.total_alumnos::DECIMAL, 0),
+        COALESCE(ep2.total_alumnos::DECIMAL, 0) - COALESCE(ep1.total_alumnos::DECIMAL, 0),
+        CASE 
+            WHEN COALESCE(ep1.total_alumnos, 0) = 0 THEN 0
+            ELSE ((COALESCE(ep2.total_alumnos::DECIMAL, 0) - COALESCE(ep1.total_alumnos::DECIMAL, 0)) / ep1.total_alumnos * 100)
+        END
+    FROM estadisticas_periodo ep1
+    FULL OUTER JOIN estadisticas_periodo ep2 ON true
+    WHERE ep1.periodo_id = p_periodo_anterior AND ep2.periodo_id = p_periodo_actual
+    
+    UNION ALL
+    
+    SELECT 
+        'Alumnos Internos'::VARCHAR,
+        COALESCE(ep1.total_alumnos_internos::DECIMAL, 0),
+        COALESCE(ep2.total_alumnos_internos::DECIMAL, 0),
+        COALESCE(ep2.total_alumnos_internos::DECIMAL, 0) - COALESCE(ep1.total_alumnos_internos::DECIMAL, 0),
+        CASE 
+            WHEN COALESCE(ep1.total_alumnos_internos, 0) = 0 THEN 0
+            ELSE ((COALESCE(ep2.total_alumnos_internos::DECIMAL, 0) - COALESCE(ep1.total_alumnos_internos::DECIMAL, 0)) / ep1.total_alumnos_internos * 100)
+        END
+    FROM estadisticas_periodo ep1
+    FULL OUTER JOIN estadisticas_periodo ep2 ON true
+    WHERE ep1.periodo_id = p_periodo_anterior AND ep2.periodo_id = p_periodo_actual
+    
+    UNION ALL
+    
+    SELECT 
+        'Alumnos Externos'::VARCHAR,
+        COALESCE(ep1.total_alumnos_externos::DECIMAL, 0),
+        COALESCE(ep2.total_alumnos_externos::DECIMAL, 0),
+        COALESCE(ep2.total_alumnos_externos::DECIMAL, 0) - COALESCE(ep1.total_alumnos_externos::DECIMAL, 0),
+        CASE 
+            WHEN COALESCE(ep1.total_alumnos_externos, 0) = 0 THEN 0
+            ELSE ((COALESCE(ep2.total_alumnos_externos::DECIMAL, 0) - COALESCE(ep1.total_alumnos_externos::DECIMAL, 0)) / ep1.total_alumnos_externos * 100)
+        END
+    FROM estadisticas_periodo ep1
+    FULL OUTER JOIN estadisticas_periodo ep2 ON true
+    WHERE ep1.periodo_id = p_periodo_anterior AND ep2.periodo_id = p_periodo_actual
+    
+    UNION ALL
+    
+    SELECT 
+        'Ingresos Totales'::VARCHAR,
+        COALESCE(ep1.ingresos_totales, 0),
+        COALESCE(ep2.ingresos_totales, 0),
+        COALESCE(ep2.ingresos_totales, 0) - COALESCE(ep1.ingresos_totales, 0),
+        CASE 
+            WHEN COALESCE(ep1.ingresos_totales, 0) = 0 THEN 0
+            ELSE ((COALESCE(ep2.ingresos_totales, 0) - COALESCE(ep1.ingresos_totales, 0)) / ep1.ingresos_totales * 100)
+        END
+    FROM estadisticas_periodo ep1
+    FULL OUTER JOIN estadisticas_periodo ep2 ON true
+    WHERE ep1.periodo_id = p_periodo_anterior AND ep2.periodo_id = p_periodo_actual;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =============================================
+-- DATOS INICIALES (SEED DATA)
+-- =============================================
+
+INSERT INTO niveles (codigo, nombre, descripcion, orden, horas_totales) VALUES
+('BASICO', 'Básico', 'Nivel básico de inglés', 1, 120),
+('INTERMEDIO', 'Intermedio', 'Nivel intermedio de inglés', 2, 150),
+('AVANZADO', 'Avanzado', 'Nivel avanzado de inglés', 3, 150),
+('PERF1', 'Perfeccionamiento 1', 'Primer nivel de perfeccionamiento', 4, 180),
+('PERF2', 'Perfeccionamiento 2', 'Segundo nivel de perfeccionamiento', 5, 180),
+('C1', 'C1', 'Nivel C1 - Usuario competente avanzado', 6, 200);
+
+-- Usuarios iniciales (Password debe ser hasheado con bcrypt)
+INSERT INTO usuarios (username, password, rol, activo) VALUES
+('coordinador', '$2a$10$YourHashedPasswordHere', 'coordinador', true),
+('admin', '$2a$10$YourHashedPasswordHere', 'administrativo', true);
+
+-- Permisos para COORDINADOR
+INSERT INTO permisos_rol (rol, modulo, puede_ver, puede_crear, puede_editar, puede_eliminar) VALUES
+('coordinador', 'finanzas', true, true, true, true),
+('coordinador', 'alumnos', true, true, true, true),
+('coordinador', 'maestros', true, true, true, true),
+('coordinador', 'grupos', true, true, true, true),
+('coordinador', 'reportes', true, true, true, true),
+('coordinador', 'estadisticas', true, true, true, true),
+
+('coordinador', 'periodos', true, true, true, true);
+
+-- Permisos para ADMINISTRATIVO
+INSERT INTO permisos_rol (rol, modulo, puede_ver, puede_crear, puede_editar, puede_eliminar) VALUES
+('administrativo', 'finanzas', true, false, false, false),
+('administrativo', 'alumnos', true, false, false, false),
+('administrativo', 'reportes', true, false, false, false),
+('administrativo', 'estadisticas', true, false, false, false);
+
+-- Permisos para MAESTRO
+INSERT INTO permisos_rol (rol, modulo, puede_ver, puede_crear, puede_editar, puede_eliminar) VALUES
+('maestro', 'grupos', true, false, false, false),
+('maestro', 'calificaciones', true, true, true, false),
+('maestro', 'asistencias', true, true, true, false);
+
+
+
+-- =============================================
+-- TABLA: NOTIFICACIONES ENVIADAS (Control de duplicados)
+-- =============================================
+CREATE TABLE IF NOT EXISTS notificaciones_enviadas (
+    id SERIAL PRIMARY KEY,
+    pago_id INTEGER REFERENCES pagos(id) ON DELETE CASCADE,
+    tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('recordatorio', 'vencida')),
+    mensaje TEXT,
+    metodo VARCHAR(20) DEFAULT 'email' CHECK (metodo IN ('email', 'manual')),
+    fecha_envio TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índice único para evitar duplicados en el mismo día
+CREATE UNIQUE INDEX IF NOT EXISTS unique_notificacion_diaria 
+ON notificaciones_enviadas (pago_id, tipo, DATE(fecha_envio));
+
+-- Índices para búsquedas rápidas
+CREATE INDEX IF NOT EXISTS idx_notificaciones_fecha ON notificaciones_enviadas(fecha_envio);
+CREATE INDEX IF NOT EXISTS idx_notificaciones_pago ON notificaciones_enviadas(pago_id, tipo);
+
+-- =============================================
+-- COMENTARIOS FINALES
+-- =============================================
+
+COMMENT ON TABLE niveles IS 'Niveles de inglés institucionales';
+COMMENT ON TABLE estadisticas_periodo IS 'Resumen estadístico por período';
+COMMENT ON TABLE tendencias_mensuales IS 'Tendencias mensuales para gráficas';
+COMMENT ON TABLE permisos_rol IS 'Permisos por rol de usuario';
+COMMENT ON TABLE notificaciones_enviadas IS 'Control de notificaciones enviadas para evitar duplicados';
+
+-- =============================================
+-- FIN DEL SCRIPT
+-- =============================================
+-- =============================================
+-- TABLA: MENSAJES DE CHAT
+-- =============================================
+CREATE TABLE IF NOT EXISTS chat_mensajes (
+    id SERIAL PRIMARY KEY,
+    emisor_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+    receptor_id INT REFERENCES usuarios(id) ON DELETE CASCADE, -- NULL si es chat grupal
+    sala_id VARCHAR(50) DEFAULT 'general', -- Para separar conversaciones
+    mensaje TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}', -- Para guardar si la IA encontr� algo
+    leido BOOLEAN DEFAULT false,
+    fecha_leido TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_sala ON chat_mensajes(sala_id);
+CREATE INDEX IF NOT EXISTS idx_chat_emisor ON chat_mensajes(emisor_id);
+CREATE INDEX IF NOT EXISTS idx_chat_receptor ON chat_mensajes(receptor_id);

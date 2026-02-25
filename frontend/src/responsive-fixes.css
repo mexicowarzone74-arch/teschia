@@ -1,0 +1,304 @@
+/**
+ * Utilidades CSS para hacer el sistema completamente responsivo
+ * Estas clases deben importarse globalmente
+ */
+
+/* ==============================================
+   MEJORAS RESPONSIVAS GLOBALES
+   ============================================== */
+
+/* Tablas responsivas - Scroll horizontal en móviles */
+@media (max-width: 768px) {
+  /* Forzar que todas las tablas sean scrolleables */
+  .card table,
+  table.table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table.table thead,
+  table.table tbody,
+  table.table tr,
+  table.table th,
+  table.table td {
+    display: table;
+    display: table-row;
+    display: table-cell;
+  }
+  
+  /* Reducir padding en celdas */
+  table th,
+  table td {
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Ocultar columnas secundarias en móviles */
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+/* Modales responsivos */
+@media (max-width: 640px) {
+  .fixed .max-w-2xl,
+  .fixed .max-w-4xl,
+  .fixed .max-w-6xl {
+    max-width: 95vw !important;
+    margin: 0.5rem;
+  }
+  
+  /* Ajustar padding de modales */
+  .fixed .p-6,
+  .fixed .p-8 {
+    padding: 1rem !important;
+  }
+  
+  /* Forms en modales */
+  .fixed form .grid-cols-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Botones responsivos */
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-secondary,
+  button.btn-primary,
+  button.btn-secondary {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Botones en grupos - apilados en móvil */
+  .flex.space-x-2,
+  .flex.space-x-3,
+  .flex.space-x-4 {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  .flex.space-x-2 > *,
+  .flex.space-x-3 > *,
+  .flex.space-x-4 > * {
+    width: 100%;
+    margin: 0 !important;
+  }
+}
+
+/* Headers responsivos */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+  }
+  
+  h3 {
+    font-size: 1.125rem !important;
+  }
+}
+
+/* Grids responsivos */
+@media (max-width: 768px) {
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4,
+  .grid-cols-5 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+  
+  .md\\:grid-cols-2,
+  .md\\:grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Cards y containers */
+@media (max-width: 640px) {
+  .card,
+  .bg-white.rounded-lg {
+    padding: 1rem !important;
+  }
+  
+  .space-y-6 {
+    gap: 1rem !important;
+  }
+  
+  .space-y-4 {
+    gap: 0.75rem !important;
+  }
+}
+
+/* Badges y tags */
+@media (max-width: 640px) {
+  .badge,
+  span.badge {
+    font-size: 0.65rem;
+    padding: 0.125rem 0.5rem;
+  }
+}
+
+/* Inputs y forms */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  input[type="tel"],
+  select,
+  textarea {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+    padding: 0.625rem 0.75rem;
+  }
+  
+  label {
+    font-size: 0.875rem;
+  }
+}
+
+/* Overflow hidden en body cuando hay modal */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Mejoras de accesibilidad táctil */
+@media (max-width: 768px) {
+  button,
+  a.button,
+  [role="button"] {
+    min-height: 44px; /* Tamaño mínimo táctil recomendado */
+    min-width: 44px;
+  }
+}
+
+/* Paginación responsive */
+@media (max-width: 640px) {
+  .pagination button,
+  .pagination a {
+    padding: 0.375rem 0.625rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .pagination .hidden-mobile {
+    display: none !important;
+  }
+}
+
+/* Stats y métricas */
+@media (max-width: 640px) {
+  .stat-card {
+    padding: 0.75rem !important;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem !important;
+  }
+  
+  .stat-label {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Graficas Recharts responsive */
+@media (max-width: 768px) {
+  .recharts-wrapper {
+    font-size: 10px !important;
+  }
+  
+  .recharts-cartesian-axis-tick {
+    font-size: 10px !important;
+  }
+}
+
+/* Tooltips */
+@media (max-width: 640px) {
+  [data-tooltip]:hover::after {
+    font-size: 0.75rem;
+    max-width: 200px;
+  }
+}
+
+/* Scroll horizontal hints */
+.scroll-hint {
+  position: relative;
+}
+
+.scroll-hint::after {
+  content: '← Desliza →';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .scroll-hint::after {
+    display: none;
+  }
+}
+
+/* Utilidades específicas */
+.mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .mobile-stack {
+    flex-direction: row;
+    gap: 1rem;
+  }
+}
+
+.mobile-full {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .mobile-full {
+    width: auto;
+  }
+}
+
+/* Text truncate responsive */
+.text-mobile-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+@media (min-width: 768px) {
+  .text-mobile-truncate {
+    max-width: none;
+    white-space: normal;
+  }
+}
+
+/* Safe area para móviles con notch */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+/* Animaciones optimizadas para móvil */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,81 @@
+services:
+  # ─────────────────────────────────────────────
+  # Backend - Node.js / Express
+  # ─────────────────────────────────────────────
+  - type: web
+    name: tescha-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free            # Cambia a "starter" en producción real
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # ── Base de datos Supabase ──
+      - key: DATABASE_URL
+        sync: false       # Lo pones manualmente en el dashboard de Render
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      # ── JWT ──
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      # ── CORS / Frontend URL ──
+      - key: FRONTEND_URL
+        sync: false       # p.ej. https://tescha.pages.dev
+      # ── Email / SMTP ──
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SECURITY_ALERT_EMAIL
+        sync: false
+      - key: ENABLE_EMAIL_ALERTS
+        value: "true"
+      # ── Encriptación ──
+      - key: ENCRYPTION_KEY
+        sync: false
+      # ── IA / Groq ──
+      - key: GROQ_API_KEY
+        sync: false
+      # ── Motor IA Python (URL del segundo servicio en Render) ──
+      - key: AI_ENGINE_URL
+        sync: false       # p.ej. https://tescha-ai.onrender.com
+
+  # ─────────────────────────────────────────────
+  # Motor IA - Python / FastAPI
+  # ─────────────────────────────────────────────
+  - type: web
+    name: tescha-ai
+    runtime: python
+    rootDir: backend/ai_engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
