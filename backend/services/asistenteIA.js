@@ -663,7 +663,7 @@ const detectarProblemasComunes = async (userId, rol) => {
       promises.push(pool.query(`
         SELECT COUNT(*) as count FROM pagos p JOIN inscripciones i ON p.inscripcion_id = i.id JOIN periodos per ON i.periodo_id = per.id 
         WHERE p.estatus IN ('pendiente', 'prorroga', 'vencido') 
-        AND (DATE(COALESCE(p.fecha_limite_prorroga, p.fecha_vencimiento)) = CURRENT_DATE)
+        AND DATE(p.fecha_vencimiento) = CURRENT_DATE
         AND per.activo = true
       `));
     } else promises.push(Promise.resolve({ rows: [{ count: 0 }] }));
@@ -673,8 +673,8 @@ const detectarProblemasComunes = async (userId, rol) => {
       promises.push(pool.query(`
         SELECT COUNT(*) as count FROM pagos p JOIN inscripciones i ON p.inscripcion_id = i.id JOIN periodos per ON i.periodo_id = per.id 
         WHERE p.estatus IN ('pendiente', 'prorroga') 
-        AND COALESCE(p.fecha_limite_prorroga, p.fecha_vencimiento) > CURRENT_DATE
-        AND COALESCE(p.fecha_limite_prorroga, p.fecha_vencimiento) <= CURRENT_DATE + INTERVAL '3 days' 
+        AND p.fecha_vencimiento > CURRENT_DATE
+        AND p.fecha_vencimiento <= CURRENT_DATE + INTERVAL '3 days' 
         AND per.activo = true
       `));
     } else promises.push(Promise.resolve({ rows: [{ count: 0 }] }));
@@ -1178,13 +1178,46 @@ Formato: Guía paso a paso y este JSON al final:
   } catch (error) {
     logger.error(`Error final en Agente IA:`, error);
     
-    // FAILSAFE: Si todo falla (sin internet y local muy lento), dar respuesta manual informativa
+    // FAILSAFE INTELIGENTE: Intentar responder desde base de conocimientos local
+    const preguntaLower = (pregunta || '').toLowerCase();
+    let respuestaFallback = null;
+
+    // Buscar en baseConocimiento según palabras clave
+    if (preguntaLower.includes('grupo') || preguntaLower.includes('grupo')) {
+      respuestaFallback = baseConocimiento.paginas?.grupos?.descripcion || baseConocimiento.paginas?.grupos?.descripcionMaestro;
+    } else if (preguntaLower.includes('alumno') || preguntaLower.includes('inscri')) {
+      respuestaFallback = baseConocimiento.paginas?.alumnos?.descripcion || baseConocimiento.paginas?.inscripciones?.descripcion;
+    } else if (preguntaLower.includes('pago') || preguntaLower.includes('deuda') || preguntaLower.includes('cobr')) {
+      respuestaFallback = baseConocimiento.paginas?.pagos?.descripcion;
+    } else if (preguntaLower.includes('maestro') || preguntaLower.includes('profesor')) {
+      respuestaFallback = baseConocimiento.paginas?.maestros?.descripcion;
+    } else if (preguntaLower.includes('calificaci') || preguntaLower.includes('nota') || preguntaLower.includes('parcial')) {
+      respuestaFallback = baseConocimiento.paginas?.calificaciones?.descripcion;
+    } else if (preguntaLower.includes('periodo') || preguntaLower.includes('ciclo')) {
+      respuestaFallback = baseConocimiento.paginas?.periodos?.descripcion;
+    } else if (preguntaLower.includes('reporte') || preguntaLower.includes('estadistic')) {
+      respuestaFallback = baseConocimiento.paginas?.reportes?.descripcion;
+    } else if (preguntaLower.includes('asistencia')) {
+      respuestaFallback = baseConocimiento.paginas?.asistencias?.descripcion;
+    }
+
+    if (respuestaFallback) {
+      return {
+        success: true,
+        respuesta: respuestaFallback,
+        tutorial: [],
+        acciones: [],
+        sugerencias: generarSugerenciasSegunRol(contexto?.rol || 'coordinador')
+      };
+    }
+
+    // Fallback genérico si no hay info en base de conocimientos
     return {
       success: true,
-      respuesta: "Lo siento, el sistema esta operando sin internet en este momento y no puedo realizar registros.\n\nPara cuando regrese la conexion, por favor prepara estos datos del maestro:\n- Nombre(s)\n- Apellido Paterno y Materno\n- Correo y Telefono\n- Niveles (Basico, Intermedio, Avanzado, etc.)\n\nIntenta de nuevo cuando se restablezca la señal.",
-      tutorial: ["Esperar conexion"],
+      respuesta: `Lo siento, tuve un problema temporal al procesar tu consulta sobre: "${pregunta}"\n\nPor favor intenta de nuevo en unos segundos. Si el problema persiste, el administrador puede revisar los logs del servidor.\n\n💡 Mientras tanto, puedes usar los menús del sistema para navegar directamente a la sección que necesitas.`,
+      tutorial: [],
       acciones: [],
-      sugerencias: ["¿Como registro un alumno?"]
+      sugerencias: generarSugerenciasSegunRol(contexto?.rol || 'coordinador')
     };
   }
 };
