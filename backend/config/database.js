@@ -25,13 +25,14 @@ const poolConfig = process.env.DATABASE_URL
 
 const pool = new Pool({
   ...poolConfig,
-  max: 30, // Aumentado para manejar más conexiones concurrentes
-  min: 5, // Mantener mínimo de conexiones listas
-  idleTimeoutMillis: 20000, // Reducido para liberar conexiones más rápido
-  connectionTimeoutMillis: 5000, // Aumentado para evitar timeouts prematuros
-  query_timeout: 10000, // Timeout de 10s para queries largas
-  statement_timeout: 15000, // Timeout máximo de statement
-  // Configurar zona horaria y encoding para caracteres especiales
+  max: 10,                        // Supabase free tier: máx 20 conexiones directas, dejamos margen
+  min: 0,                         // No mantener conexiones idle (Render free duerme y las mata)
+  idleTimeoutMillis: 10000,       // Cerrar conexiones idle tras 10s
+  connectionTimeoutMillis: 10000, // 10s para conectar antes de fallar
+  query_timeout: 15000,
+  statement_timeout: 20000,
+  keepAlive: true,                // Keepalive para detectar conexiones muertas
+  keepAliveInitialDelayMillis: 5000,
   options: '-c timezone=America/Mexico_City -c client_encoding=UTF8'
 });
 
@@ -41,8 +42,8 @@ pool.on('connect', () => {
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Error inesperado en PostgreSQL:', err);
-  process.exit(-1);
+  // NO hacer process.exit — solo loguear. El pool recupera conexiones automáticamente.
+  console.error('⚠️ Error en cliente PostgreSQL (el pool se recuperará):', err.message);
 });
 
 export default pool;
