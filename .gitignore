@@ -10,6 +10,11 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+*.production
+backend/.env
+backend/.env.production
+frontend/.env
 
 # Build
 dist/
