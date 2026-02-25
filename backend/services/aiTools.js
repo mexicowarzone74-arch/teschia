@@ -2,7 +2,7 @@ import pool from '../config/database.js';
 import logger from '../utils/logger.js';
 import bcrypt from 'bcryptjs';
 import generator from 'generate-password';
-import { setIAProvider } from '../config/ia.js';
+
 
 /**
  * Helper: Generar username único

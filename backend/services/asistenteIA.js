@@ -1,6 +1,6 @@
 import pool from '../config/database.js';
 import logger from '../utils/logger.js';
-import { generarRespuestaIA, ejecutarChatAgente } from '../config/ia.js';
+import { ejecutarChatAgente } from '../config/ia.js';
 import { aiToolsDefinition, aiToolsImplementations } from './aiTools.js';
 import { consultarMotorPython } from './pythonAIService.js';
 
