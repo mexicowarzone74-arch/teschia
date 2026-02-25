@@ -2873,7 +2873,362 @@ Si quieres que yo te guie paso a paso, dime en que paso estas y te ayudo.""",
         ]
     },
 
-    
+    "que_es_tescha": {
+        "respuesta": """**Que es TESCHA**
+
+TESCHA es el sistema de gestion escolar del Departamento de Idiomas (Centro de Idiomas). Administra todo el ciclo academico de los cursos de ingles:
+
+**Lo que gestiona TESCHA:**
+
+**Academico:**
+- 6 niveles de ingles: Basico, Intermedio, Avanzado, Perfeccionamiento 1, Perfeccionamiento 2, C1
+- Ciclos cuatrimestrales (4 meses por periodo)
+- 3 parciales de calificacion por periodo
+- Control de asistencias y ausencias
+
+**Alumnos:**
+- Registro de alumnos internos (universitarios) y externos
+- Inscripciones rapidas a grupos
+- Historial academico completo
+- Prediccion de riesgo de desercion
+
+**Pagos:**
+- Sistema de 4 parcialidades por periodo
+- Recordatorios automaticos de pago
+- Generacion de recibos (Formato Universal ventanilla de gobierno)
+- Prorrogas de fecha de pago
+
+**Personal:**
+- Maestros con niveles certificados
+- Asignacion de grupos por nivel y disponibilidad
+- Reportes de carga horaria
+
+**Inteligencia Artificial:**
+- Asistente integrado para consultas en lenguaje natural
+- Alertas automaticas: pagos vencidos, grupos sin maestro, alumnos en riesgo
+- Resumen ejecutivo en tiempo real
+- Analisis de tendencias y predicciones
+
+**Roles del Sistema:**
+- Coordinador: acceso total
+- Maestro: sus grupos, calificaciones y asistencias
+- Administrativo: pagos y alumnos""",
+        "acciones": [
+            {"texto": "Ir al Dashboard", "ruta": "/dashboard"}
+        ]
+    },
+
+    "niveles_ingles": {
+        "respuesta": """**Niveles de Ingles en TESCHA**
+
+El sistema maneja 6 niveles de ingles en orden progresivo:
+
+| # | Nivel | Codigo tipico |
+|---|-------|---------------|
+| 1 | Basico | B1-01, B1-02 |
+| 2 | Intermedio | I2-01, I2-02 |
+| 3 | Avanzado | A3-01 |
+| 4 | Perfeccionamiento 1 | P4-01 |
+| 5 | Perfeccionamiento 2 | P5-01 |
+| 6 | C1 | C1-01 |
+
+**Como funcionan:**
+- Cada nivel dura un cuatrimestre (4 meses)
+- El alumno avanza al siguiente nivel al aprobar
+- Minimo para aprobar: promedio 70 Y 80% de asistencia
+- Si reprueba, repite el mismo nivel
+
+**Al inscribir un alumno:**
+- Se selecciona el nivel en el que va
+- El sistema filtra maestros certificados para ese nivel
+- Si un maestro no aparece en la lista, falta que el coordinador le asigne ese nivel en su perfil
+
+**Certificacion de maestros:**
+- Cada maestro tiene asignados los niveles que puede impartir
+- Esto evita asignar un maestro a un nivel que no domina
+- Se configura en Menu -> Personal -> Perfil del maestro""",
+        "acciones": [
+            {"texto": "Ir a Grupos", "ruta": "/grupos"},
+            {"texto": "Ir a Personal", "ruta": "/maestros"}
+        ]
+    },
+
+    "sistema_pagos": {
+        "respuesta": """**Como Funciona el Sistema de Pagos**
+
+TESCHA usa un sistema de **4 parcialidades** por periodo academico.
+
+**Estructura de Pagos:**
+- Al inscribir un alumno se generan automaticamente sus 4 pagos del periodo
+- Cada pago = 1 parcialidad del cuatrimestre
+- Los 4 pagos tienen fechas de vencimiento distribuidas en el periodo
+
+**Estados de un Pago:**
+- **Pendiente**: Aun no se ha realizado, dentro de fecha
+- **Vencido**: La fecha limite ya paso, no se ha cobrado
+- **Pagado**: Cobrado y registrado exitosamente
+- **Prorroga**: Se extendio la fecha de vencimiento
+
+**Metodo de Pago:**
+- Formato Universal (ventanilla de gobierno)
+- Se puede adjuntar comprobante de pago
+
+**Alertas Automaticas del Sistema:**
+- 3 dias antes del vencimiento: recordatorio por correo al alumno
+- Dia del vencimiento: recordatorio final
+- 1 dia despues: alerta por incumplimiento al coordinador
+
+**Prorrogas:**
+- El coordinador puede extender la fecha de un pago pendiente o vencido
+- No genera interes ni penalizacion
+- Menu -> Pagos -> Selecciona el pago -> Extender Fecha
+
+**Recibos:**
+- Se generan automaticamente al registrar el pago
+- Formato Universal (valido para tramites oficiales)
+- Se puede reimprimir en cualquier momento
+
+**Consultas Rapidas al Asistente:**
+- "Quien debe" → lista de alumnos con pagos pendientes/vencidos
+- "Cuanto hemos recaudado" → estadisticas financieras del periodo
+- "Dame info del alumno [matricula]" → estado de cuenta del alumno""",
+        "acciones": [
+            {"texto": "Ir a Pagos", "ruta": "/pagos"}
+        ]
+    },
+
+    "reglas_calificacion": {
+        "respuesta": """**Sistema de Calificaciones TESCHA**
+
+**Estructura:**
+- 3 parciales por periodo: Parcial 1, Parcial 2, Parcial 3
+- Escala: 0 a 100 puntos
+- Calificacion minima para aprobar: **70**
+- El promedio se calcula automaticamente: (P1 + P2 + P3) / 3
+
+**Para Aprobar el Nivel:**
+El alumno debe cumplir AMBAS condiciones:
+1. Promedio final >= 70
+2. Asistencia >= 80%
+
+Si falla una de las dos, el alumno **reprueba** y debe repetir el nivel.
+
+**Como se Registran:**
+- Maestros van a Menu -> Calificaciones -> Seleccionan su grupo -> Eligen parcial -> Capturan notas
+- Coordinadores pueden hacer carga masiva via CSV
+
+**Carga Masiva (Coordinador):**
+1. Menu -> Calificaciones -> Descargar plantilla CSV
+2. Llenar en Excel columnds P1, P2, P3 para cada alumno
+3. Subir el archivo -> Vista previa -> Confirmar
+
+**Editar Calificaciones:**
+- Solo puede hacerlo el maestro del grupo o el coordinador
+- Todos los cambios quedan registrados en auditoria (quien cambio, cuando, valor anterior y nuevo)
+
+**Reporte de Calificaciones:**
+- Menu -> Reportes -> Calificaciones
+- Filtra por grupo, nivel o periodo
+- Exporta a Excel o PDF
+- Las boletas se generan automaticamente por alumno""",
+        "acciones": [
+            {"texto": "Ir a Calificaciones", "ruta": "/calificaciones"},
+            {"texto": "Ir a Reportes", "ruta": "/reportes"}
+        ]
+    },
+
+    "reglas_asistencia": {
+        "respuesta": """**Reglas de Asistencia en TESCHA**
+
+**Minimo obligatorio:**
+- El alumno debe tener al menos **80% de asistencia** para aprobar el nivel
+- Si tiene menos del 80%, reprueba aunque tenga buenas calificaciones
+
+**Equivalencias:**
+- 3 retardos = 1 falta automaticamente (el sistema lo calcula solo)
+- Una justificacion puede convertir una falta en justificada (no cuenta igual)
+
+**Marcas disponibles al pasar lista:**
+- Presente (P) - cuenta como asistencia
+- Falta (F) - no asistio
+- Retardo (R) - llego tarde (3 acumulados = 1 falta)
+- Justificada (J) - falta con justificacion documentada
+
+**Como calcula el sistema:**
+```
+% Asistencia = (Clases asistidas / Total de clases) × 100
+```
+Donde "asistidas" incluye retardos (no cuentan como falta completa hasta acumular 3).
+
+**Alertas automaticas:**
+- El sistema marca en rojo alumnos con asistencia < 80%
+- Genera alertas de "ausencias criticas" si hay 3 faltas consecutivas
+- Notifica al coordinador y maestro automaticamente
+
+**Editar asistencias:**
+- Se pueden corregir despues, requiere justificacion
+- Quedan registradas en auditoria
+
+**Ver mi asistencia:**
+- Maestros: Menu -> Asistencias -> Selecciona grupo -> Ver porcentajes
+- Preguntame: "Dame info del alumno [matricula]" para ver su % de asistencia actual""",
+        "acciones": [
+            {"texto": "Ir a Asistencias", "ruta": "/asistencias"}
+        ]
+    },
+
+    "ver_mis_alumnos": {
+        "respuesta": """**Como Ver Tus Alumnos**
+
+**Si eres Maestro:**
+
+Opcion 1 - Dashboard:
+Al entrar, tu dashboard muestra tus grupos activos con el numero de alumnos.
+
+Opcion 2 - Menu Grupos:
+1. Menu -> "Grupos"
+2. Solo apareceran los grupos asignados a ti
+3. Haz clic en un grupo para ver la lista completa de alumnos inscritos
+
+Opcion 3 - Preguntame:
+- "Dame la lista del grupo B1-01" - lista completa del grupo
+- "Cuantos alumnos tengo" - conteo total
+- "Dame info del alumno [matricula]" - datos de un alumno especifico
+
+**Si eres Coordinador:**
+
+Ver todos los alumnos:
+1. Menu -> "Alumnos"
+2. Lista completa con filtros por nivel, grupo, periodo, estado
+3. Busca por nombre o matricula
+
+Ver alumnos de un grupo especifico:
+1. Menu -> "Grupos"
+2. Selecciona el grupo
+3. Tab "Alumnos" -> lista de inscritos con calificaciones y asistencias
+
+Ver alumnos de un maestro:
+1. Menu -> "Maestros"
+2. Selecciona el maestro
+3. Su perfil muestra grupos asignados -> haz clic en cada grupo para ver sus alumnos
+
+**Exportar lista:**
+Desde cualquier vista de alumnos, boton "Exportar" para descargar Excel con nombre, matricula, correo, estado.""",
+        "acciones": [
+            {"texto": "Ir a Alumnos", "ruta": "/alumnos"},
+            {"texto": "Ir a Grupos", "ruta": "/grupos"}
+        ]
+    },
+
+    "buscar_alumno": {
+        "respuesta": """**Como Buscar un Alumno en el Sistema**
+
+**Busqueda Rapida (recomendada):**
+1. Menu -> "Alumnos"
+2. En el campo de busqueda escribe:
+   - Nombre o apellido (parcial funciona: "Garc" encuentra a "Garcia", "Garza", etc.)
+   - Matricula completa (9-10 digitos)
+   - Correo electronico
+3. Presiona Enter o el boton de lupa
+4. La lista se filtra en tiempo real
+
+**Busqueda con Filtros:**
+1. Menu -> "Alumnos"
+2. Usa los filtros avanzados:
+   - Por nivel (Basico, Intermedio, etc.)
+   - Por grupo especifico
+   - Por periodo activo o historico
+   - Por estado (activo, inactivo, egresado)
+3. Combina filtros para resultados mas precisos
+
+**Pedirle al Asistente:**
+- "Dame info del alumno [matricula]" → datos completos + pagos + calificaciones
+- "Busca al alumno Juan Garcia" → busca por nombre
+- "Que alumnos se llaman Lopez" → busqueda por apellido
+
+**Si no lo encuentras:**
+- Verifica si el alumno esta inactivo (usa filtro "Todos los estados")
+- Puede estar dado de baja o en un periodo anterior
+- Revisa si la matricula esta escrita correctamente
+- Busca desde el historial en Menu -> "Reportes" -> "Alumnos"
+
+**Tip:** La matricula es el identificador unico. Si tienes la matricula, la busqueda es instantanea y exacta.""",
+        "acciones": [
+            {"texto": "Ir a Alumnos", "ruta": "/alumnos"}
+        ]
+    },
+
+    "dar_de_baja_alumno": {
+        "respuesta": """**Como Dar de Baja o Desactivar un Alumno**
+
+Dar de baja a un alumno lo marca como inactivo pero NO elimina sus datos. El historial se conserva permanentemente.
+
+**Proceso:**
+1. Menu -> "Alumnos"
+2. Busca al alumno por nombre o matricula
+3. Clic en "Editar" o abre su perfil
+4. Busca campo "Estado" o "Estatus"
+5. Cambia de "Activo" a "Inactivo" o "Dado de Baja"
+6. Puedes agregar motivo de baja (opcional pero recomendado)
+7. Guarda
+
+**Que pasa al dar de baja:**
+- El alumno ya NO aparece en la lista activa de alumnos
+- Sus inscripciones actuales se marcan como canceladas
+- Sus pagos pendientes quedan como "Baja" (no se cancelan automaticamente)
+- Sus datos, historial, calificaciones y asistencias se conservan
+- Se puede reactivar en cualquier momento
+
+**Reactivar un alumno:**
+1. Menu -> "Alumnos" -> Filtra por "Todos" o "Inactivos"
+2. Busca al alumno
+3. Editar -> Cambiar estado a "Activo"
+4. Si retoma clases, inscribelo nuevamente en Inscripciones Rapidas
+
+**Importante:**
+- Los datos NUNCA se eliminan permanentemente
+- Puedes consultar el historial de alumnos dados de baja en cualquier momento
+- La baja NO cancela automaticamente los pagos pendientes — debes gestionarlos manualmente
+
+**Nota para Coordinadores:**
+Cada baja queda registrada en auditoria con fecha, usuario que la realizo y motivo (si se especifico).""",
+        "acciones": [
+            {"texto": "Ir a Alumnos", "ruta": "/alumnos"}
+        ]
+    },
+
+    "ayuda_generica": {
+        "respuesta": """**Hola, soy el asistente de TESCHA**
+
+Estoy aqui para ayudarte con todo lo que necesites del sistema. Puedes preguntarme en lenguaje natural.
+
+**Consultas de datos (respondo al momento):**
+- "Quien debe" → alumnos con pagos pendientes
+- "Cuanto hemos recaudado" → finanzas del periodo
+- "Dame info del alumno [matricula]" → datos completos
+- "Que grupos no tienen maestro" → alertas de grupos
+- "Genera resumen ejecutivo" → panorama general
+
+**Como hacer cosas (te explico los pasos):**
+- "Como inscribo un alumno"
+- "Como registro un pago"
+- "Como creo un grupo"
+- "Como paso lista"
+- "Como asigno maestros"
+- "Como inicio un periodo"
+
+**Si es tu primera vez:**
+Preguntame "por donde empiezo" y te guio paso a paso.
+
+**Para cualquier duda:**
+Solo escribe tu pregunta. Si es sobre datos del sistema la consulto en tiempo real; si es sobre como hacer algo, te explico los pasos detallados.
+
+Estoy disponible para el Coordinador, Maestros y personal Administrativo.""",
+        "acciones": [
+            {"texto": "Ver Dashboard", "ruta": "/dashboard"}
+        ]
+    },
+
     "calendario horarios": {
         "respuesta": """**Como Ver Calendario de Horarios**
 
@@ -3273,6 +3628,59 @@ def buscar_respuesta_simple(pregunta):
         ],
         "finanzas": ["cuanto se ha recaudado", "cuanto recaudado", "cuanto ingreso", "ingresos totales", "recaudacion", "estadisticas financieras", "finanzas", "cuanto dinero", "balance", "estado financiero"],
         "deudas": ["quien debe", "quienes deben", "adeudos", "pagos pendientes", "pagos vencidos", "listado de adeudos"],
+        "que_es_tescha": [
+            "que es tescha", "para que sirve tescha", "que es el sistema", "para que sirve el sistema",
+            "describeme el sistema", "de que trata el sistema", "que hace tescha",
+            "que es este sistema", "explicame el sistema", "informacion del sistema"
+        ],
+        "niveles_ingles": [
+            "niveles de ingles", "que niveles hay", "cuantos niveles hay", "cuales son los niveles",
+            "niveles del curso", "niveles de ingles del sistema", "que niveles maneja",
+            "nivel basico intermedio", "como son los niveles", "estructura de niveles"
+        ],
+        "sistema_pagos": [
+            "como funcionan los pagos", "sistema de pagos", "como son los pagos",
+            "cuantas parcialidades", "que son las parcialidades", "cuantos pagos hay",
+            "como se cobran los pagos", "estructura de pagos", "pagos del periodo",
+            "cuando se paga", "fechas de pago", "como funciona el cobro", "metodo de pago"
+        ],
+        "reglas_calificacion": [
+            "calificacion minima", "nota minima para aprobar", "como se calcula promedio",
+            "cuantos parciales hay", "que son los parciales", "sistema de calificaciones",
+            "como funciona calificaciones", "para aprobar necesito", "que nota necesito",
+            "minimo para pasar", "calificacion para aprobar", "reglas calificaciones",
+            "como se califica", "promedio final", "cuantos examenes hay"
+        ],
+        "reglas_asistencia": [
+            "cuantas faltas puedo tener", "minimo asistencia", "regla asistencia",
+            "porcentaje minimo asistencia", "cuanto de asistencia necesito",
+            "que pasa si falto", "faltas permitidas", "retardos equivalen falta",
+            "cuantos retardos valen una falta", "reglas asistencia", "politica asistencia",
+            "para no reprobar por faltas", "80 por ciento asistencia", "requisito asistencia"
+        ],
+        "ver_mis_alumnos": [
+            "ver mis alumnos", "mis alumnos", "lista de mis alumnos", "cuales son mis alumnos",
+            "dame mis alumnos", "quiero ver mis alumnos", "alumnos de mi grupo",
+            "alumnos asignados", "lista alumnos grupo", "ver alumnos del grupo",
+            "quienes son mis alumnos", "tengo alumnos", "cuantos alumnos tengo"
+        ],
+        "buscar_alumno": [
+            "buscar alumno", "como busco alumno", "encontrar alumno", "busco un alumno",
+            "como encuentro alumno", "donde busco alumno", "localizar alumno",
+            "buscar estudiante", "como buscar estudiante", "busco estudiante",
+            "no encuentro alumno", "como encontrar alumno", "busqueda alumno"
+        ],
+        "dar_de_baja_alumno": [
+            "dar de baja alumno", "eliminar alumno", "desactivar alumno", "borrar alumno",
+            "baja alumno", "alumno se va", "alumno se retiro", "alumno desertor",
+            "quitar alumno", "como doy de baja", "dar baja", "suspension alumno",
+            "alumno ya no estudia", "alumno deja el curso", "alumno cancelo"
+        ],
+        "ayuda_generica": [
+            "ayuda", "necesito ayuda", "ayudame", "como funciona",
+            "no se que hacer", "no entiendo", "tengo una duda", "tengo dudas",
+            "por favor ayuda", "necesito asistencia", "asistencia por favor"
+        ],
         "sistema": ["resumen del sistema", "que hace el sistema", "explica el sistema", "funciones del sistema", "como funciona el sistema"]
     }
     

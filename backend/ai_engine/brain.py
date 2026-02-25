@@ -878,6 +878,26 @@ def detectar_y_ejecutar_herramienta(pregunta: str, contexto: Dict[str, Any]) -> 
             "acciones": [{"texto": "Ir a Grupos", "ruta": "/grupos"}]
         },
         {
+            # Buscar / ver / encontrar un ALUMNO — va ANTES de "ver grupos" para evitar colision
+            # "ver mis alumnos" tiene alumno+ver = 2 coincidencias → dispara aqui correctamente
+            "claves": ['alumno', 'buscar', 'busco', 'encontrar', 'ver'],
+            "respuesta": (
+                "Para buscar un alumno en el sistema:\n\n"
+                "**Busqueda rapida:**\n"
+                "1. Ve al menu **Alumnos**\n"
+                "2. En el campo de busqueda escribe nombre, apellido o matricula\n"
+                "3. La lista se filtra en tiempo real\n\n"
+                "**Para buscar con filtros:**\n"
+                "- Filtra por nivel, grupo, periodo o estado (activo/inactivo)\n\n"
+                "**Para ver sus datos completos:**\n"
+                "- Haz clic en el alumno para abrir su perfil\n"
+                "- Veras: datos personales, inscripciones, pagos, calificaciones y asistencias\n\n"
+                "_Tip rapido: Preguntame 'Dame info del alumno [matricula]' y te traigo todo al momento._\n\n"
+                "Si no lo encuentras, verifica que no este marcado como inactivo usando el filtro 'Todos los estados'."
+            ),
+            "acciones": [{"texto": "Ir a Alumnos", "ruta": "/alumnos"}]
+        },
+        {
             # Guia para maestros que quieren VER sus grupos (no crear)
             "claves": ['grupo', 'ver', 'veo', 'mis', 'consultar', 'cuales'],
             "respuesta": (
@@ -906,6 +926,62 @@ def detectar_y_ejecutar_herramienta(pregunta: str, contexto: Dict[str, Any]) -> 
                 "Si quieres el recibo de un alumno especifico, dime su nombre o matricula."
             ),
             "acciones": [{"texto": "Ir a Pagos", "ruta": "/pagos"}]
+        },
+        {
+            # Dar de baja / eliminar / desactivar alumno
+            "claves": ['dar de baja', 'eliminar alumno', 'desactivar alumno', 'baja alumno', 'borrar alumno'],
+            "respuesta": (
+                "Para dar de baja a un alumno (desactivarlo sin borrar su historial):\n\n"
+                "1. Ve al menu **Alumnos**\n"
+                "2. Busca al alumno por nombre o matricula\n"
+                "3. Abre su perfil -> clic en **Editar**\n"
+                "4. Cambia el campo **Estado** de 'Activo' a 'Inactivo' o 'Dado de Baja'\n"
+                "5. Agrega motivo (recomendado para auditoria)\n"
+                "6. Guarda\n\n"
+                "_Importante: Los datos NUNCA se eliminan. El historial academico, pagos y calificaciones se conservan permanentemente._\n\n"
+                "_Puedes reactivar al alumno en cualquier momento desde Alumnos -> Filtro 'Inactivos' -> Editar -> Cambiar a Activo._\n\n"
+                "Si quieres dar de baja al alumno y necesitas ayuda, dime su nombre o matricula."
+            ),
+            "acciones": [{"texto": "Ir a Alumnos", "ruta": "/alumnos"}]
+        },
+        {
+            # Cuantas faltas se permiten / reglas de asistencia
+            "claves": ['falt', 'asistencia', 'porcentaje', 'minimo'],
+            "respuesta": (
+                "Las reglas de asistencia en TESCHA son:\n\n"
+                "- **Minimo obligatorio: 80% de asistencia** para aprobar el nivel\n"
+                "- **3 retardos = 1 falta** (el sistema lo calcula automaticamente)\n"
+                "- Las faltas justificadas cuentan diferente a las injustificadas\n\n"
+                "**Como ver el porcentaje de un alumno:**\n"
+                "- Ve a **Asistencias** -> selecciona el grupo -> aparece el % por alumno\n"
+                "- O preguntame: 'Dame info del alumno [matricula]' y te digo su % actual\n\n"
+                "**Alertas automaticas:**\n"
+                "- El sistema marca en rojo alumnos con asistencia < 80%\n"
+                "- Genera alerta cuando hay 3 faltas consecutivas\n\n"
+                "_Recuerda: Para aprobar deben cumplirse AMBAS: promedio >=70 Y asistencia >=80%_"
+            ),
+            "acciones": [{"texto": "Ir a Asistencias", "ruta": "/asistencias"}]
+        },
+        {
+            # Cuantos parciales / calificacion minima / para aprobar
+            "claves": ['parcial', 'aprobar', 'calificaci', 'promedio', 'minimo'],
+            "respuesta": (
+                "El sistema de calificaciones en TESCHA:\n\n"
+                "- **3 parciales** por periodo (P1, P2, P3)\n"
+                "- Escala: 0 a 100 puntos\n"
+                "- **Calificacion minima para aprobar: 70**\n"
+                "- El promedio se calcula automaticamente: (P1 + P2 + P3) / 3\n\n"
+                "**Para aprobar el nivel se necesitan AMBAS cosas:**\n"
+                "1. Promedio final >= 70\n"
+                "2. Asistencia >= 80%\n\n"
+                "**Como registrar calificaciones:**\n"
+                "1. Menu **Calificaciones** -> selecciona tu grupo\n"
+                "2. Elige el parcial (1, 2 o 3)\n"
+                "3. Captura la nota de cada alumno\n"
+                "4. Guarda\n\n"
+                "_Tip: Las notas del mismo alumno en todos los periodos quedan en su historial permanentemente._"
+            ),
+            "acciones": [{"texto": "Ir a Calificaciones", "ruta": "/calificaciones"}]
         },
     ]
 
