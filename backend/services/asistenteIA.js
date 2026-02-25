@@ -1019,16 +1019,24 @@ Reglas:
    - Carrera (si es interno)
    - Tipo de alumno (interno o externo)
    Una vez que tenga esta información, procederé con el registro."
-6. Si el usuario quiere crear un GRUPO y faltan datos, USA ESTA PLANTILLA:
+7. Si el usuario quiere crear un GRUPO y faltan datos, USA ESTA PLANTILLA:
    "Para crear un nuevo grupo, necesito los siguientes detalles:
    - Código del grupo (ej: ING-M1)
-   - Nivel de inglés (ID o nombre)
+   - Nivel de inglés (nombre del nivel, ej: Básico, Intermedio)
    - Turno (matutino/sabatino)
    - Cupo máximo
    Por favor compárteme estos datos para continuar."
 8. NUNCA respondas con el JSON vacío de texto. Siempre debes dar una explicación humana de lo que encontraste o de lo que vas a hacer.
 9. Si usas una herramienta, el siguiente mensaje DEBE resumir los resultados para el usuario en lenguaje natural.
-10. Contexto: Periodo ${metricas.periodo || 'N/A'}, Alertas: ${resumenAlertas}.`;
+10. Contexto: Periodo ${metricas.periodo || 'N/A'}, Alertas: ${resumenAlertas}.
+11. PROHIBIDO ABSOLUTO — NUNCA MENCIONES EN TUS RESPUESTAS:
+    - IDs numéricos internos (ej: "ID 5", "ID del maestro", "ID interno", "usuario_id")
+    - Nombres de funciones o herramientas (ej: "registrar_pago", "obtener_inscripcion", "asignar_maestro_a_grupo", "listar_grupos")
+    - Nombres de tablas de la base de datos (ej: "tabla inscripciones", "tabla pagos")
+    - Términos técnicos de programación o base de datos
+    Si necesitas un dato que internamente es un ID, pide el NOMBRE, MATRÍCULA o CORREO del alumno/maestro en su lugar. Usa siempre lenguaje de usuario final, no de programador.
+12. Para REGISTRAR UN PAGO: primero busca al alumno con buscar_alumno usando el nombre/matrícula que te dé el usuario. No pidas "ID interno" — pide el nombre o matrícula del alumno.
+13. Para ASIGNAR UN MAESTRO A GRUPO: primero usa listar_personal para ver maestros disponibles y listar_grupos para ver los grupos. Muéstraselos al usuario por nombre y pregunta cuál desea. NUNCA pidas un ID.`;
 
     const formatPrompt = `
 Formato: Guía paso a paso y este JSON al final:
