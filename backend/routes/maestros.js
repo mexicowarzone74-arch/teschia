@@ -287,27 +287,23 @@ router.post('/', auth, checkRole('coordinador'), async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Generar y enviar token de verificación de email
-    try {
-      const verificationToken = crypto.randomBytes(32).toString('hex');
-      const expiraEn = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
-
-      // Guardar token en BD
-      await pool.query(
-        `INSERT INTO email_verification_tokens (usuario_id, token, email, expira_en)
-         VALUES ($1, $2, $3, $4)`,
-        [usuarioId, verificationToken, correo, expiraEn]
-      );
-
-      // Enviar email de verificación
-      const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email/${verificationToken}`;
-      await enviarEmailVerificacion(correo, nombre, verifyUrl);
-      
-      logger.info('Verification email sent to new user', { usuarioId, email: correo });
-    } catch (emailError) {
-      // No fallar si el email falla, solo registrar
-      logger.error('Error sending verification email', { error: emailError.message, email: correo });
-    }
+    // Generar y enviar token de verificación de email (fire-and-forget, no bloquea la respuesta)
+    setImmediate(async () => {
+      try {
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const expiraEn = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+        await pool.query(
+          `INSERT INTO email_verification_tokens (usuario_id, token, email, expira_en)
+           VALUES ($1, $2, $3, $4)`,
+          [usuarioId, verificationToken, correo, expiraEn]
+        );
+        const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verificar-email/${verificationToken}`;
+        await enviarEmailVerificacion(correo, nombre, verifyUrl);
+        logger.info('Verification email sent to new user', { usuarioId, email: correo });
+      } catch (emailError) {
+        logger.error('Error sending verification email', { error: emailError.message, email: correo });
+      }
+    });
 
     // Retornar con nombre_completo y niveles
     const maestroCompleto = await client.query(`
