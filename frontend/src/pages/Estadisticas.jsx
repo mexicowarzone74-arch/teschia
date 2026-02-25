@@ -22,20 +22,25 @@ const Estadisticas = () => {
   const loadPeriodos = async () => {
     try {
       const response = await periodosService.getAll();
-      setPeriodos(response.data);
-      const activo = response.data.find(p => p.activo);
+      const lista = Array.isArray(response.data) ? response.data : [];
+      setPeriodos(lista);
+      const activo = lista.find(p => p.activo);
       if (activo) {
         setSelectedPeriod(activo.id);
-      } else if (response.data.length > 0) {
-        setSelectedPeriod(response.data[0].id);
+      } else if (lista.length > 0) {
+        setSelectedPeriod(lista[0].id);
+      } else {
+        // No hay periodos — quitar el spinner
+        setLoading(false);
       }
     } catch (error) {
       toast.error('Error al cargar periodos');
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (selectedPeriod) {
+    if (selectedPeriod !== '') {
       loadEstadisticas();
     }
   }, [selectedPeriod]);
