@@ -10,8 +10,15 @@
 
 -- Renombrar cambio_password_requerido → debe_cambiar_password
 -- (El código backend usa debe_cambiar_password)
-ALTER TABLE usuarios 
-  RENAME COLUMN cambio_password_requerido TO debe_cambiar_password;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'usuarios' AND column_name = 'cambio_password_requerido' AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE usuarios RENAME COLUMN cambio_password_requerido TO debe_cambiar_password;
+  END IF;
+END $$;
 
 -- Agregar nombre/apellidos/email al usuario (usados al crear maestros)
 ALTER TABLE usuarios
@@ -211,9 +218,16 @@ INSERT INTO permisos_rol (rol, modulo, puede_ver, puede_crear, puede_editar, pue
 
 
 -- ----------------------------------------------------------------
--- 9. ELIMINAR TRIGGER que referencia salones (ya no existen)
+-- 9. ELIMINAR TRIGGERS/FUNCIONES que referencian salones (ya no existen)
 -- ----------------------------------------------------------------
-DROP TRIGGER IF EXISTS trigger_actualizar_salones ON salones;
+DO $$
+BEGIN
+  -- Solo intentar borrar el trigger si la tabla salones existe
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'salones' AND table_schema = 'public') THEN
+    DROP TRIGGER IF EXISTS trigger_actualizar_salones ON salones;
+  END IF;
+END $$;
+
 DROP TRIGGER IF EXISTS trigger_validar_traslape_horarios ON grupos_horarios;
 DROP FUNCTION IF EXISTS validar_traslape_horarios();
 DROP FUNCTION IF EXISTS reporte_ocupacion_salones(INT);
