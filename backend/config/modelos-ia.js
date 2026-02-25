@@ -82,7 +82,10 @@ let estadisticasModelos = {};
 // ============= HELPERS =============
 
 export function obtenerModelo(modeloId) {
-  const [provider, modelo] = modeloId.split('.');
+  const dotIndex = modeloId.indexOf('.');
+  if (dotIndex === -1) return undefined;
+  const provider = modeloId.slice(0, dotIndex);
+  const modelo   = modeloId.slice(dotIndex + 1);
   return MODELOS[provider]?.[modelo];
 }
 
