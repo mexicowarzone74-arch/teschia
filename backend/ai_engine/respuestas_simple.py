@@ -3143,7 +3143,8 @@ def buscar_respuesta_simple(pregunta):
         "reportar ausencias criticas": ["ausencias criticas", "reportar ausencias", "alumnos con faltas", "muchas faltas", "como reportar ausencias", "faltas consecutivas"],
         "comparar periodo anterior": ["comparar periodo", "periodo anterior", "como comparar periodos", "comparativa periodos", "vs periodo anterior", "evolucion periodos"],
         "identificar mejores alumnos": ["mejores alumnos", "alumnos destacados", "top alumnos", "ranking alumnos", "como identificar mejores", "cuadro honor", "mejores promedios"],
-        "resumen ejecutivo": ["resumen ejecutivo", "generar resumen", "como generar resumen", "resumen del sistema", "dashboard ia", "resumen ia"],
+        "resumen ejecutivo": ["resumen ejecutivo", "generar resumen", "como generar resumen", "resumen del sistema", "dashboard ia", "resumen ia",
+                              "que problemas tiene", "problemas del sistema", "que falla", "que esta mal", "falla el sistema", "errores del sistema", "que esta fallando", "que no funciona"],
         "alertas ia": ["alertas ia", "alertas de la ia", "ver alertas", "como ver alertas", "alertas del sistema", "notificaciones ia"],
         "personalizar ia": ["personalizar ia", "personalizar sugerencias", "como personalizar", "configurar ia", "ajustar ia"],
         "editar informacion": ["editar informacion", "como editar", "modificar datos", "cambiar informacion", "actualizar datos", "editar alumno", "editar maestro"],
@@ -3160,7 +3161,15 @@ def buscar_respuesta_simple(pregunta):
         "enviar mensaje maestro": ["enviar mensaje maestro", "mensaje maestro", "contactar maestro", "como enviar mensaje", "escribir maestro", "notificar maestro", "comunicar maestro"],
         "publicar aviso general": ["publicar aviso", "aviso general", "anuncio general", "como publicar aviso", "crear aviso", "nuevo aviso", "publicar anuncio"],
         "historial completo": ["historial completo", "ver historial", "como ver historial", "historial alumno", "historial de pagos", "historial academico"],
-        "asignar maestro": ["asignar maestro", "como asignar maestro", "asignar docente", "asignar profesor", "maestro a grupo", "asignacion maestro"],
+        "asignar maestro": [
+            # formas infinitivo
+            "asignar maestro", "como asignar maestro", "asignar docente", "asignar profesor", "maestro a grupo", "asignacion maestro",
+            # formas conjugadas (presente, imperativo) — estas son las que el usuario realmente escribe
+            "asigno maestro", "asigno maestros", "como asigno maestro", "como asigno maestros",
+            "asigno al maestro", "asigna maestro", "como asigna maestro",
+            "asignar maestros", "asignacion de maestro", "asignacion de maestros",
+            "maestro al grupo", "maestros a grupos", "maestro para grupo"
+        ],
         "ver grupos asignados": ["ver grupos asignados", "grupos asignados maestro", "grupos maestro", "que grupos tiene maestro", "como ver grupos asignados", "consultar grupos maestro"],
         "crear usuario acceso": ["crear usuario", "nuevo usuario", "crear usuario acceso", "como crear usuario", "dar acceso sistema", "usuario login", "crear credenciales"],
         "asignar maestro arrastrando": ["asignar arrastrando", "asignar maestro arrastrando", "arrastrar maestro", "drag drop maestro", "asignacion drag", "como asignar arrastrando"],
@@ -3172,6 +3181,29 @@ def buscar_respuesta_simple(pregunta):
         "exportar calendario": ["exportar calendario", "exportar horarios", "descargar horarios", "imprimir horarios", "horarios pdf", "horarios excel", "como exportar horarios"],
         "filtrar por nivel": ["filtrar nivel", "filtrar por nivel", "buscar por nivel", "como filtrar nivel", "filtrar grupos nivel", "nivel especifico"],
         "revisar cupo": ["revisar cupo", "ver cupo", "consultar cupo", "cupo grupo", "como revisar cupo", "cuantos alumnos caben", "espacios disponibles grupo"],
+        "registrar pago": [
+            # formas infinitivo
+            "registrar pago", "nuevo pago", "cobrar", "pago alumno", "como registrar pago",
+            # formas conjugadas
+            "registro pago", "registro pagos", "como registro pago", "como registro pagos",
+            "como registro un pago", "registro un pago", "registra pago", "registra un pago",
+            "agregar pago", "agrego pago", "como agrego pago"
+        ],
+        "activar periodo": [
+            # formas infinitivo
+            "activar periodo", "como activar periodo", "cambiar periodo", "iniciar periodo", "habilitar periodo",
+            # formas conjugadas — estas son las que el usuario realmente escribe
+            "inicio periodo", "inicio un periodo", "como inicio periodo", "como inicio un periodo",
+            "inicia periodo", "inicia un periodo", "como inicia periodo",
+            "iniciar un periodo", "como iniciar periodo", "como iniciar un periodo",
+            "empezar periodo", "empiezo periodo", "como empiezo periodo",
+            "crear un periodo", "creo un periodo", "como creo periodo", "como creo un periodo"
+        ],
+        "crear periodo": [
+            "crear periodo", "nuevo periodo", "crear periodo academico", "como crear periodo",
+            "registrar periodo", "alta periodo", "nuevo cuatrimestre",
+            "crear el periodo", "crea el periodo"
+        ],
         "finanzas": ["cuanto se ha recaudado", "cuanto recaudado", "cuanto ingreso", "ingresos totales", "recaudacion", "estadisticas financieras", "finanzas", "cuanto dinero", "balance", "estado financiero"],
         "deudas": ["quien debe", "quienes deben", "adeudos", "pagos pendientes", "pagos vencidos", "listado de adeudos"],
         "sistema": ["resumen del sistema", "que hace el sistema", "explica el sistema", "funciones del sistema", "como funciona el sistema"]
