@@ -1028,8 +1028,7 @@ Formato: Guía paso a paso y este JSON al final:
 { "tutorial": ["Paso 1"], "acciones": [{"texto": "Ir", "ruta": "/"}], "sugerencias": ["¿Paso 2?"] }
 ---JSON_END---`;
 
-    // Si es Ollama (Local), usamos el prompt corto. Si es Groq (Nube), usamos el detallado.
-    const systemPrompt = useOllama ? (promptBase + formatPrompt) : (promptBase + `\n\nDINÁMICA: Ejecuta acciones si tienes datos. Pide lo que falte de forma humana.\n\n` + formatPrompt);
+    const systemPrompt = promptBase + `\n\nDINÁMICA: Ejecuta acciones si tienes datos. Pide lo que falte de forma humana.\n\n` + formatPrompt;
 
     const messages = [ { role: 'system', content: systemPrompt } ];
 

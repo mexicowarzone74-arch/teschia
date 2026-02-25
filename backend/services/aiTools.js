@@ -310,20 +310,7 @@ export const aiToolsDefinition = [
       }
     }
   },
-  {
-    type: 'function',
-    function: {
-      name: 'cambiar_proveedor_ia',
-      description: 'Cambia entre Groq (Nube) y Ollama (Local/Gratis).',
-      parameters: {
-        type: 'object',
-        properties: {
-          proveedor: { type: 'string', enum: ['groq', 'ollama'] }
-        },
-        required: ['proveedor']
-      }
-    }
-  },
+
   {
     type: 'function',
     function: {
@@ -633,12 +620,7 @@ export const aiToolsImplementations = {
     return result.rows;
   },
 
-  cambiar_proveedor_ia: async ({ proveedor }) => {
-    try {
-      setIAProvider(proveedor);
-      return { success: true, mensaje: `IA: ${proveedor.toUpperCase()}` };
-    } catch (e) { return { error: e.message }; }
-  },
+
 
   asignar_maestro_a_grupo: async ({ maestro_id, grupo_id }) => {
     try {
