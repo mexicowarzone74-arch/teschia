@@ -14,16 +14,29 @@ const RestablecerPassword = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [validando, setValidando] = useState(true);
   const [tokenValido, setTokenValido] = useState(false);
+  const [motivoError, setMotivoError] = useState('');
 
   useEffect(() => {
-    // Verificar que el token existe
     if (!token) {
-      toast.error('Token inválido');
-      navigate('/login');
+      setMotivoError('El enlace no contiene un token válido.');
+      setValidando(false);
+      return;
     }
-    setValidando(false);
-    setTokenValido(true);
-  }, [token, navigate]);
+
+    // Validar el token contra el backend ANTES de mostrar el formulario
+    api.get(`/auth/validar-token-reset/${token}`)
+      .then(({ data }) => {
+        if (data.valido) {
+          setTokenValido(true);
+        } else {
+          setMotivoError(data.motivo || 'Token inválido o expirado.');
+        }
+      })
+      .catch(() => {
+        setMotivoError('No se pudo verificar el enlace. Intenta de nuevo más tarde.');
+      })
+      .finally(() => setValidando(false));
+  }, [token]);
 
   const validarPassword = () => {
     if (nuevaPassword.length < 8) {
@@ -83,15 +96,21 @@ const RestablecerPassword = () => {
       <div className="min-h-screen bg-gradient-to-br from-tescha-blue to-blue-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-2xl p-8 text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Token Inválido</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Enlace no válido</h2>
           <p className="text-gray-600 mb-6">
-            El enlace de recuperación es inválido o ha expirado.
+            {motivoError || 'El enlace de recuperación es inválido o ha expirado.'}
           </p>
           <button
-            onClick={() => navigate('/login')}
-            className="btn-primary"
+            onClick={() => navigate('/login', { state: { abrirRecuperacion: true } })}
+            className="btn-primary w-full mb-3"
           >
-            Volver al Login
+            Solicitar nuevo enlace
+          </button>
+          <button
+            onClick={() => navigate('/login')}
+            className="text-sm text-tescha-blue hover:underline"
+          >
+            Volver al inicio de sesión
           </button>
         </div>
       </div>

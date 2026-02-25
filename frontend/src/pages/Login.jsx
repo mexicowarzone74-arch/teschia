@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { FaEye, FaEyeSlash, FaLock, FaShieldAlt, FaEnvelope } from 'react-icons/fa';
@@ -18,6 +18,7 @@ const Login = () => {
   const [emailRecuperacion, setEmailRecuperacion] = useState('');
   const { login, login2FA, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Redirigir si ya está autenticado, pero solo si no está esperando cambio de contraseña
   useEffect(() => {
@@ -25,6 +26,13 @@ const Login = () => {
       navigate('/');
     }
   }, [isAuthenticated, mostrarCambioPassword, navigate]);
+
+  // Abrir modal de recuperación automáticamente si viene desde enlace expirado
+  useEffect(() => {
+    if (location.state?.abrirRecuperacion) {
+      setMostrarRecuperacion(true);
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

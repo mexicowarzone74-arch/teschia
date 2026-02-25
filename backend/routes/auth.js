@@ -458,6 +458,42 @@ router.post('/solicitar-recuperacion', async (req, res) => {
 // =============================================
 // POST /api/auth/restablecer-contrasena - Restablecer contraseña con token
 // =============================================
+// GET /api/auth/validar-token-reset/:token - Validar token ANTES de mostrar el form
+// =============================================
+router.get('/validar-token-reset/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token) return res.status(400).json({ valido: false, motivo: 'Token requerido' });
+
+    // Primero ver si existe (sin filtros de expiración) para dar mensaje preciso
+    const raw = await pool.query(
+      `SELECT usuario_id, expira_en AT TIME ZONE 'UTC' AS expira_utc, usado 
+       FROM password_reset_tokens WHERE token = $1`,
+      [token]
+    );
+
+    if (raw.rows.length === 0) {
+      return res.json({ valido: false, motivo: 'El enlace no existe. Por favor solicita uno nuevo.' });
+    }
+
+    const row = raw.rows[0];
+    if (row.usado) {
+      return res.json({ valido: false, motivo: 'Este enlace ya fue utilizado. Solicita un nuevo correo de recuperación.' });
+    }
+
+    const nowUTC = new Date();
+    if (new Date(row.expira_utc) <= nowUTC) {
+      return res.json({ valido: false, motivo: 'El enlace expiró (válido 1 hora). Por favor solicita uno nuevo.' });
+    }
+
+    return res.json({ valido: true });
+  } catch (error) {
+    logger.error('Error validando token reset', { error: error.message });
+    res.status(500).json({ valido: false, motivo: 'Error al validar el enlace' });
+  }
+});
+
+// =============================================
 router.post('/restablecer-contrasena', async (req, res) => {
   try {
     const { token, nuevaPassword } = req.body;
@@ -470,18 +506,31 @@ router.post('/restablecer-contrasena', async (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
 
-    // Verificar token
+    // Verificar token con cast explícito para evitar problemas de timezone
     const result = await pool.query(
-      `SELECT usuario_id FROM password_reset_tokens 
-       WHERE token = $1 AND expira_en > NOW() AND usado = false`,
+      `SELECT usuario_id, expira_en AT TIME ZONE 'UTC' AS expira_utc, usado
+       FROM password_reset_tokens WHERE token = $1`,
       [token]
     );
 
     if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Token inválido o expirado' });
+      logger.warn('Password reset: token no encontrado', { token: token.substring(0, 8) + '...' });
+      return res.status(400).json({ error: 'El enlace no es válido. Por favor solicita uno nuevo.' });
     }
 
-    const usuarioId = result.rows[0].usuario_id;
+    const row = result.rows[0];
+
+    if (row.usado) {
+      logger.warn('Password reset: token ya usado', { token: token.substring(0, 8) + '...' });
+      return res.status(400).json({ error: 'Este enlace ya fue utilizado. Solicita un nuevo correo de recuperación.' });
+    }
+
+    if (new Date(row.expira_utc) <= new Date()) {
+      logger.warn('Password reset: token expirado', { token: token.substring(0, 8) + '...', expira: row.expira_utc });
+      return res.status(400).json({ error: 'El enlace expiró (válido 1 hora). Por favor solicita uno nuevo.' });
+    }
+
+    const usuarioId = row.usuario_id;
 
     // Hash de la nueva contraseña
     const hashedPassword = await bcrypt.hash(nuevaPassword, 10);
