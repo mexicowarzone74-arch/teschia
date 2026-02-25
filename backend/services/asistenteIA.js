@@ -1204,6 +1204,14 @@ Formato: Guía paso a paso y este JSON al final:
     const esRegistroGrupo    = /(crear?|nuevo|nueva|agregar?)\s+.*(grupo)/i.test(preguntaLower);
     const esRegistroPago     = /(registrar?|c[oó]mo registro|agregar?|capturar?)\s+.*(pago)/i.test(preguntaLower) || /c[oó]mo (se registra|registro|pongo|capturo).*pago/i.test(preguntaLower);
 
+    // Detectar preguntas de NAVEGACIÓN ESPECÍFICAS (deben ir ANTES de los keywords genéricos)
+    const esAsignarMaestroGrupo = /(asign|c[oó]mo asign).*(maestro|profesor).*(grupo)|(asign|c[oó]mo asign).*(grupo).*(maestro|profesor)|(maestro|profesor).*(grupo)|grupo.*maestro/i.test(preguntaLower);
+    const esIniciarPeriodo      = /(c[oó]mo|cómo).*(inicio|iniciar|activar|crear|empezar).*(periodo|ciclo)|(periodo|ciclo).*(inicio|iniciar|activar|crear|empezar)/i.test(preguntaLower);
+    const esSubirCalificaciones = /(c[oó]mo|cómo).*(subo|subir|cargar|subir|registrar|capturar).*(calificaci|nota|parcial)|(calificaci|nota|parcial).*(subir|cargar|registrar)/i.test(preguntaLower);
+    const esTomarAsistencia     = /(c[oó]mo|cómo).*(tomo|tomar|pasar|registrar|marcar).*(asistencia|lista)|(asistencia|lista).*(tomar|pasar|registrar|marcar)/i.test(preguntaLower);
+    const esExportarReporte     = /(c[oó]mo|cómo).*(export|generar|descargar).*(reporte|boleta|lista|pdf|excel)/i.test(preguntaLower);
+    const esInscribirAlumnos    = /(c[oó]mo|cómo).*(inscrib|inscripcion).*(alumno)|(alumno).*(inscrib)/i.test(preguntaLower);
+
     // 1. Problemas/alertas del sistema → consultar la DB directamente
     if (esProblemasSistema) {
       try {
@@ -1235,7 +1243,31 @@ Formato: Guía paso a paso y este JSON al final:
     else if (esRegistroPago) {
       respuestaFallback = `### Cómo Registrar un Pago\n\n**Pasos:**\n\n1. Ve al módulo **Pagos** en el menú lateral\n2. Haz clic en **Registrar Pago** o busca al alumno por nombre / matrícula\n3. Selecciona la inscripción del periodo actual\n4. Ingresa el **monto** del pago\n5. En el campo **Referencia**, escribe el número de recibo del **Formato Universal** (ventanilla de gobierno)\n6. Haz clic en **Guardar** → se genera el recibo automáticamente\n\n⚠️ **Importante:** TESCHA solo acepta pago mediante **Formato Universal** (ventanilla de gobierno). No se acepta efectivo, tarjeta ni transferencia.`;
     }
-    // 6. Fallback genérico por sección (solo navegación, no datos)
+    // 6. Asignar maestro a grupo → pasos y opciones
+    else if (esAsignarMaestroGrupo) {
+      respuestaFallback = `### Cómo Asignar Maestros a Grupos\n\n**Opción 1 — Sugerencias IA (recomendado):**\n1. Ve a **Grupos** en el menú\n2. Abre el grupo sin maestro\n3. Haz clic en **"Sugerencias IA" 🤖**\n4. El sistema te muestra maestros disponibles sin conflictos de horario\n5. Selecciona el maestro → Guardar\n\n**Opción 2 — Asignación Masiva (varios grupos a la vez):**\n1. Ve a **Grupos** → selecciona múltiples grupos con el checkbox\n2. Haz clic en **"Asignación Masiva"**\n3. Elige el maestro → aplica a todos los seleccionados\n\n**Opción 3 — Dashboard de Asignaciones:**\n- Ve a **Asignaciones** en el menú\n- Arrastra grupos hacia el maestro correcto en la vista visual\n\n💡 **Tip:** Consulta **Horarios** antes de asignar para detectar conflictos visualmente.`;
+    }
+    // 7. Iniciar / activar periodo
+    else if (esIniciarPeriodo) {
+      respuestaFallback = `### Cómo Iniciar un Nuevo Periodo\n\n**Pasos:**\n\n1. Ve a **Períodos** en el menú lateral\n2. Haz clic en **"Nuevo Periodo"**\n3. Ingresa:\n   - Nombre del periodo (ej: Enero-Junio 2026)\n   - Fecha de inicio\n   - Fecha de fin\n4. Guarda → actívalo haciendo clic en **"Activar"**\n\n⚠️ **Importante:** Solo puede haber **un periodo activo** a la vez. Al activar uno nuevo, el anterior se desactiva automáticamente.\n\n💡 Una vez activo el periodo, puedes crear grupos, inscribir alumnos y registrar pagos.`;
+    }
+    // 8. Subir calificaciones
+    else if (esSubirCalificaciones) {
+      respuestaFallback = `### Cómo Subir Calificaciones\n\n**Como coordinador (manual):**\n1. Ve a **Calificaciones** en el menú\n2. Filtra por grupo\n3. Ingresa las notas de los 3 parciales por alumno (escala 0-100)\n4. Guarda → el promedio se calcula automáticamente\n\n**Como maestro (desde su dashboard):**\n1. El maestro entra al sistema con su usuario\n2. Va a **"Subir Calificaciones"**\n3. Descarga la **plantilla CSV**\n4. Llena las notas en Excel\n5. Sube el archivo → carga masiva instantánea\n\n💡 **CSV masivo** es la forma más rápida para grupos grandes. Acepta decimales (89.5) y enteros (90).`;
+    }
+    // 9. Tomar / pasar asistencia
+    else if (esTomarAsistencia) {
+      respuestaFallback = `### Cómo Tomar Asistencia\n\n**Como coordinador:**\n1. Ve a **Asistencias** en el menú\n2. Selecciona el grupo y la fecha\n3. Marca para cada alumno: **P** (Presente), **F** (Falta) o **R** (Retardo)\n4. Guarda los cambios\n\n**Como maestro:**\n1. Entra al sistema con su usuario\n2. Ve a **"Mis Asistencias"** o haz clic en **"Asistencia"** desde el grupo correspondiente\n3. Marca presente/falta/retardo\n4. Guarda\n\n💡 **Tip:** Toma asistencia en los primeros 10 minutos de clase. La IA analiza patrones de deserción automáticamente.`;
+    }
+    // 10. Exportar reportes
+    else if (esExportarReporte) {
+      respuestaFallback = `### Cómo Exportar Reportes\n\n1. Ve a **Reportes** en el menú lateral\n2. Selecciona el tipo de reporte:\n   - 📋 Lista de asistencia por grupo\n   - 📝 Boletas de calificaciones\n   - 💰 Reporte financiero de ingresos\n   - 📌 Listado de alumnos con adeudos\n3. Aplica los filtros (periodo, grupo, nivel)\n4. Haz clic en **PDF** o **Excel** para descargar\n\n💡 **Exportación masiva:** Las boletas de calificaciones se pueden exportar para todo el grupo en un solo archivo.`;
+    }
+    // 11. Inscribir alumnos
+    else if (esInscribirAlumnos) {
+      respuestaFallback = `### Cómo Inscribir Alumnos\n\n**Inscripción Rápida (masiva):**\n1. Ve a **Inscripciones** en el menú\n2. Selecciona el **periodo activo**\n3. Usa los checkboxes para marcar múltiples alumnos\n4. Elige el **grupo destino**\n5. Haz clic en **Inscribir** → confirmación inmediata\n\n**Inscripción individual:**\n- Desde el perfil del alumno → botón **"Inscribir"**\n\n⚠️ **Verifica** que el grupo tenga cupo disponible antes de inscribir.`;
+    }
+    // 12. Fallback genérico por sección (solo navegación, no datos)
     else if (!esPregunaDatos) {
       if (preguntaLower.includes('grupo')) {
         respuestaFallback = baseConocimiento.paginas?.grupos?.descripcion;
