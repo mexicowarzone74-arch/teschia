@@ -208,7 +208,7 @@ CREATE TABLE pagos (
     monto DECIMAL(10, 2) NOT NULL,
     fecha_vencimiento DATE NOT NULL,
     fecha_pago TIMESTAMP,
-    estatus VARCHAR(20) DEFAULT 'pendiente' CHECK (estatus IN ('pendiente', 'pagado', 'prorroga')),
+    estatus VARCHAR(20) DEFAULT 'pendiente' CHECK (estatus IN ('pendiente', 'pagado', 'prorroga', 'vencido')),
     metodo_pago VARCHAR(50) DEFAULT 'FORMATO UNIVERSAL',
     referencia VARCHAR(100),
     comprobante_url VARCHAR(255),
@@ -591,8 +591,7 @@ FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
 CREATE TRIGGER trigger_actualizar_pagos BEFORE UPDATE ON pagos
 FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
 
-CREATE TRIGGER trigger_actualizar_salones BEFORE UPDATE ON salones
-FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
+-- trigger_actualizar_salones eliminado (tabla salones ya no existe)
 
 CREATE TRIGGER trigger_actualizar_periodos BEFORE UPDATE ON periodos
 FOR EACH ROW EXECUTE FUNCTION actualizar_updated_at();
@@ -865,14 +864,14 @@ BEGIN
         a.id,
         CONCAT(a.nombre, ' ', a.apellido_paterno, ' ', COALESCE(a.apellido_materno, '')) as nombre_completo,
         a.correo,
-        a.celular,
+        a.telefono,
         SUM(p.monto_final) as total_adeudo,
         COUNT(p.id)::BIGINT as pagos_pendientes
     FROM alumnos a
     JOIN inscripciones i ON a.id = i.alumno_id
     JOIN pagos p ON i.id = p.inscripcion_id
     WHERE p.estatus IN ('pendiente', 'vencido')
-    GROUP BY a.id, a.nombre, a.apellido_paterno, a.apellido_materno, a.correo, a.celular
+    GROUP BY a.id, a.nombre, a.apellido_paterno, a.apellido_materno, a.correo, a.telefono
     HAVING SUM(p.monto_final) > 0
     ORDER BY total_adeudo DESC;
 END;
@@ -987,10 +986,11 @@ INSERT INTO niveles (codigo, nombre, descripcion, orden, horas_totales) VALUES
 ('PERF2', 'Perfeccionamiento 2', 'Segundo nivel de perfeccionamiento', 5, 180),
 ('C1', 'C1', 'Nivel C1 - Usuario competente avanzado', 6, 200);
 
--- Usuarios iniciales (Password debe ser hasheado con bcrypt)
+-- Usuarios iniciales
+-- password: admin123  (cÃ¡mbialo al entrar por primera vez)
 INSERT INTO usuarios (username, password, rol, activo) VALUES
-('coordinador', '$2a$10$YourHashedPasswordHere', 'coordinador', true),
-('admin', '$2a$10$YourHashedPasswordHere', 'administrativo', true);
+('coordinador', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LpMSCHclgrC', 'coordinador', true)
+ON CONFLICT (username) DO NOTHING;
 
 -- Permisos para COORDINADOR
 INSERT INTO permisos_rol (rol, modulo, puede_ver, puede_crear, puede_editar, puede_eliminar) VALUES
@@ -1061,7 +1061,7 @@ CREATE TABLE IF NOT EXISTS chat_mensajes (
     receptor_id INT REFERENCES usuarios(id) ON DELETE CASCADE, -- NULL si es chat grupal
     sala_id VARCHAR(50) DEFAULT 'general', -- Para separar conversaciones
     mensaje TEXT NOT NULL,
-    metadata JSONB DEFAULT '{}', -- Para guardar si la IA encontró algo
+    metadata JSONB DEFAULT '{}', -- Para guardar si la IA encontrï¿½ algo
     leido BOOLEAN DEFAULT false,
     fecha_leido TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
