@@ -290,6 +290,93 @@ const Dashboard = () => {
       {/* Alertas de Prórrogas */}
       {!isMaestro() && <AlertasProrrogas />}
 
+      {/* ¿Por dónde empezar? - Solo cuando no hay datos */}
+      {isCoordinador() && stats && stats.alumnos?.total === 0 && stats.grupos_activos === 0 && (
+        <div className="card border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="bg-indigo-600 text-white p-3 rounded-xl">
+              <FaRocket className="text-xl" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-indigo-900">🚀 ¿Por dónde empezar?</h2>
+              <p className="text-sm text-indigo-600">El sistema está listo. Sigue estos pasos para configurarlo.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              {
+                paso: 1,
+                titulo: 'Crea un Período',
+                desc: 'Define el período académico actual (ej. Enero-Junio 2026). Sin período activo, nada funciona.',
+                emoji: '📅',
+                color: 'bg-blue-100 border-blue-300 text-blue-900',
+                btnColor: 'bg-blue-600 hover:bg-blue-700',
+                ruta: '/periodos'
+              },
+              {
+                paso: 2,
+                titulo: 'Agrega Personal',
+                desc: 'Crea maestros y administrativos. Se generará usuario y contraseña automáticamente para cada uno.',
+                emoji: '👨‍🏫',
+                color: 'bg-teal-100 border-teal-300 text-teal-900',
+                btnColor: 'bg-teal-600 hover:bg-teal-700',
+                ruta: '/maestros'
+              },
+              {
+                paso: 3,
+                titulo: 'Crea Grupos',
+                desc: 'Organiza los grupos de clases por nivel y asigna un maestro y horario a cada uno.',
+                emoji: '📚',
+                color: 'bg-yellow-100 border-yellow-300 text-yellow-900',
+                btnColor: 'bg-yellow-600 hover:bg-yellow-700',
+                ruta: '/grupos'
+              },
+              {
+                paso: 4,
+                titulo: 'Inscribe Alumnos',
+                desc: 'Registra los alumnos y asígnalos a un grupo. Puedes usar "Inscripciones Rápidas" para hacerlo más rápido.',
+                emoji: '🎓',
+                color: 'bg-green-100 border-green-300 text-green-900',
+                btnColor: 'bg-green-600 hover:bg-green-700',
+                ruta: '/inscripciones-rapidas'
+              },
+              {
+                paso: 5,
+                titulo: 'Registra Pagos',
+                desc: 'Una vez inscritos los alumnos, registra sus pagos del periodo para llevar el control financiero.',
+                emoji: '💰',
+                color: 'bg-pink-100 border-pink-300 text-pink-900',
+                btnColor: 'bg-pink-600 hover:bg-pink-700',
+                ruta: '/pagos'
+              }
+            ].map(({ paso, titulo, desc, emoji, color, btnColor, ruta }) => (
+              <div key={paso} className={`relative border-2 rounded-xl p-4 ${color} flex flex-col gap-2`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">{emoji}</span>
+                  <span className="text-xs font-black uppercase tracking-widest opacity-60">Paso {paso}</span>
+                </div>
+                <p className="font-bold text-sm">{titulo}</p>
+                <p className="text-xs opacity-75 leading-relaxed flex-1">{desc}</p>
+                <button
+                  onClick={() => navigate(ruta)}
+                  className={`mt-2 w-full py-1.5 rounded-lg text-white text-xs font-bold transition-colors ${btnColor}`}
+                >
+                  Ir ahora →
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 bg-white border border-indigo-200 rounded-lg p-3 flex items-start gap-2">
+            <span className="text-lg">💡</span>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              <strong>Consejo:</strong> Empieza siempre por el <strong>Período</strong> — sin uno activo el sistema no puede registrar grupos, inscripciones ni pagos. Si tienes dudas, usa el botón <strong>"Ver Tutorial Interactivo"</strong> en la parte superior.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Guía Rápida - Solo para coordinadores */}
       {!isMaestro() && (
         <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
