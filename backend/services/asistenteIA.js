@@ -947,6 +947,14 @@ export const responderPregunta = async (pregunta, contexto) => {
   try {
     const { rol, userId } = contexto;
 
+    // --- DIAGNÓSTICO: verificar Groq configurado ---
+    const groqKey = process.env.GROQ_API_KEY || '';
+    if (!groqKey) {
+      logger.error('GROQ_API_KEY no está definida en las variables de entorno. El asistente IA no puede funcionar.');
+    } else {
+      logger.info(`Groq configurado: ${groqKey.split(',').length} key(s) disponibles.`);
+    }
+
     // --- DESVÍO AL MOTOR PYTHON (Si está habilitado) ---
     if (process.env.USE_PYTHON_AI === 'true') {
       try {
@@ -1186,7 +1194,7 @@ Formato: Guía paso a paso y este JSON al final:
     };
 
   } catch (error) {
-    logger.error(`Error final en Agente IA:`, error);
+    logger.error(`Error final en Agente IA: ${error?.message || String(error)}`, { stack: error?.stack });
     
     // FAILSAFE INTELIGENTE: Intentar responder desde base de conocimientos local
     const preguntaLower = (pregunta || '').toLowerCase();
