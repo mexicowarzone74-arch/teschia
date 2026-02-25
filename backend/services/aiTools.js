@@ -336,6 +336,19 @@ export const aiToolsDefinition = [
         }
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'ver_promedios_por_nivel',
+      description: 'Muestra el promedio de calificaciones de los alumnos agrupado por nivel (Básico, Intermedio, Avanzado, etc.). Úsala para responder preguntas como "¿cuál es el promedio por nivel?", "¿cómo van las calificaciones?", "¿qué nivel tiene mejor desempeño?".',
+      parameters: {
+        type: 'object',
+        properties: {
+          periodo_id: { type: 'number', description: 'ID del periodo (opcional, usa el activo si se omite)' }
+        }
+      }
+    }
   }
 ];
 
@@ -447,6 +460,58 @@ export const aiToolsImplementations = {
   listar_niveles: async () => {
     const result = await pool.query('SELECT id, nombre FROM niveles ORDER BY id');
     return result.rows;
+  },
+
+  ver_promedios_por_nivel: async ({ periodo_id } = {}) => {
+    try {
+      // Si no viene periodo_id, usa el activo
+      let pid = periodo_id ? parseInt(periodo_id, 10) : null;
+      if (!pid) {
+        const pRes = await pool.query('SELECT id FROM periodos WHERE activo = true LIMIT 1');
+        if (pRes.rows.length === 0) return { error: 'No hay periodo activo' };
+        pid = pRes.rows[0].id;
+      }
+
+      // Promedio por nivel usando calificacion_final de inscripciones
+      const res = await pool.query(`
+        SELECT
+          n.nombre AS nivel,
+          COUNT(DISTINCT i.alumno_id) AS total_alumnos,
+          ROUND(AVG(i.calificacion_final)::numeric, 2) AS promedio_final,
+          COUNT(CASE WHEN i.calificacion_final >= 60 THEN 1 END) AS aprobados,
+          COUNT(CASE WHEN i.calificacion_final < 60 AND i.calificacion_final IS NOT NULL THEN 1 END) AS reprobados,
+          COUNT(CASE WHEN i.calificacion_final IS NULL THEN 1 END) AS sin_calificacion
+        FROM niveles n
+        JOIN grupos g ON g.nivel_id = n.id AND g.periodo_id = $1
+        JOIN inscripciones i ON i.grupo_id = g.id
+        GROUP BY n.id, n.nombre
+        ORDER BY n.id
+      `, [pid]);
+
+      if (res.rows.length === 0) {
+        // Fallback: promedio por parciales de calificaciones
+        const res2 = await pool.query(`
+          SELECT
+            n.nombre AS nivel,
+            COUNT(DISTINCT i.alumno_id) AS total_alumnos,
+            ROUND(AVG(c.calificacion)::numeric, 2) AS promedio_parciales
+          FROM niveles n
+          JOIN grupos g ON g.nivel_id = n.id AND g.periodo_id = $1
+          JOIN inscripciones i ON i.grupo_id = g.id
+          LEFT JOIN calificaciones c ON c.inscripcion_id = i.id
+          GROUP BY n.id, n.nombre
+          ORDER BY n.id
+        `, [pid]);
+        return res2.rows.length > 0
+          ? { periodo_id: pid, promedios_por_parciales: res2.rows }
+          : { mensaje: 'Aún no hay calificaciones registradas en este periodo' };
+      }
+
+      return { periodo_id: pid, promedios_por_nivel: res.rows };
+    } catch (error) {
+      logger.error('Error[ver_promedios_por_nivel]:', error);
+      return { error: error.message };
+    }
   },
 
   obtener_periodo_activo: async () => {
