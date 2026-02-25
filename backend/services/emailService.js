@@ -6,12 +6,15 @@ import logger from '../utils/logger.js';
 const createTransporter = () => {
   const cfg = {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
+    port: parseInt(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE !== 'false', // true por defecto (465 SSL)
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   };
   logger.info('📧 SMTP config', {
     host: cfg.host,
@@ -103,10 +106,6 @@ export const enviarEmailRecuperacion = async (email, nombre, resetUrl) => {
       </body>
       </html>
     `;
-
-    // Verificar conexión SMTP antes de enviar
-    await transporter.verify();
-    logger.info('📧 SMTP verify OK — enviando correo de recuperación', { email });
 
     // Enviar email
     await transporter.sendMail({
@@ -293,8 +292,7 @@ export const enviarEmailVerificacion = async (email, nombre, verifyUrl) => {
       </html>
     `;
 
-    await transporter.verify();
-    logger.info('📧 SMTP verify OK — enviando correo de verificación', { email });
+    logger.info('📧 Enviando correo de verificación', { email });
 
     await transporter.sendMail({
       from: `"TESCHA - Sistema de Coordinación" <${process.env.SMTP_USER}>`,

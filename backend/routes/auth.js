@@ -424,14 +424,20 @@ router.post('/solicitar-recuperacion', async (req, res) => {
     // Construir URL de recuperación
     const resetUrl = `${process.env.FRONTEND_URL || 'https://teschia.pages.dev'}/restablecer-contrasena/${token}`;
 
-    // Enviar email con el enlace
-    await enviarEmailRecuperacion(email, usuario.nombre || usuario.username, resetUrl);
-
-    logger.info('Password recovery requested', { email, userId: usuario.id });
-
+    // Responder inmediatamente — email se manda en background
     res.json({ 
       success: true, 
       message: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña' 
+    });
+
+    // Enviar email sin bloquear
+    setImmediate(async () => {
+      try {
+        await enviarEmailRecuperacion(email, usuario.nombre || usuario.username, resetUrl);
+        logger.info('Password recovery email sent', { email, userId: usuario.id });
+      } catch (emailError) {
+        logger.error('Error enviando email de recuperación', { message: emailError.message, code: emailError.code, response: emailError.response });
+      }
     });
   } catch (error) {
     logger.error('Error in password recovery', { error: error.message });
@@ -534,13 +540,20 @@ router.post('/solicitar-verificacion-email', async (req, res) => {
 
     // Enviar email
     const verifyUrl = `${process.env.FRONTEND_URL || 'https://teschia.pages.dev'}/verificar-email/${token}`;
-    await enviarEmailVerificacion(usuario.email, usuario.nombre, verifyUrl);
 
-    logger.info('Email verification sent', { userId: usuario.id, email: usuario.email });
-
+    // Responder inmediatamente — email se manda en background
     res.json({
       success: true,
       message: 'Correo de verificación enviado'
+    });
+
+    setImmediate(async () => {
+      try {
+        await enviarEmailVerificacion(usuario.email, usuario.nombre, verifyUrl);
+        logger.info('Email verification sent', { userId: usuario.id, email: usuario.email });
+      } catch (emailError) {
+        logger.error('Error enviando email de verificación', { message: emailError.message, code: emailError.code, response: emailError.response });
+      }
     });
   } catch (error) {
     logger.error('Error sending verification email', { error: error.message });
