@@ -4,16 +4,23 @@ import logger from '../utils/logger.js';
 
 // Configuración del transporter de nodemailer
 const createTransporter = () => {
-  // Usar configuración del archivo .env o valores por defecto
-  return createTransport({
+  const cfg = {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true', // true para 465, false para otros puertos
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+  };
+  logger.info('📧 SMTP config', {
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure,
+    user: cfg.auth.user || '(no configurado)',
+    passSet: !!cfg.auth.pass,
   });
+  return createTransport(cfg);
 };
 
 /**
@@ -97,6 +104,10 @@ export const enviarEmailRecuperacion = async (email, nombre, resetUrl) => {
       </html>
     `;
 
+    // Verificar conexión SMTP antes de enviar
+    await transporter.verify();
+    logger.info('📧 SMTP verify OK — enviando correo de recuperación', { email });
+
     // Enviar email
     await transporter.sendMail({
       from: `"TESCHA - Sistema de Coordinación" <${process.env.SMTP_USER}>`,
@@ -120,11 +131,17 @@ Tecnológico de Estudios Superiores de Chalco
       `.trim(),
     });
 
-    logger.info('Recovery email sent', { email });
+    logger.info('✅ Correo de recuperación enviado', { email });
     return { success: true };
   } catch (error) {
-    logger.error('Error sending recovery email', { error: error.message, email });
-    throw new Error('No se pudo enviar el correo de recuperación');
+    logger.error('❌ Error enviando correo de recuperación', {
+      email,
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+    });
+    throw new Error('No se pudo enviar el correo de recuperación: ' + error.message);
   }
 };
 
@@ -182,11 +199,16 @@ export const enviarEmailConfirmacionCambio = async (email, nombre) => {
       html: htmlContent,
     });
 
-    logger.info('Password change confirmation email sent', { email });
+    logger.info('✅ Correo de confirmación de cambio enviado', { email });
     return { success: true };
   } catch (error) {
-    logger.error('Error sending confirmation email', { error: error.message, email });
-    // No lanzar error, es solo confirmación
+    logger.error('❌ Error enviando correo de confirmación', {
+      email,
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+    });
     return { success: false, error: error.message };
   }
 };
@@ -271,6 +293,9 @@ export const enviarEmailVerificacion = async (email, nombre, verifyUrl) => {
       </html>
     `;
 
+    await transporter.verify();
+    logger.info('📧 SMTP verify OK — enviando correo de verificación', { email });
+
     await transporter.sendMail({
       from: `"TESCHA - Sistema de Coordinación" <${process.env.SMTP_USER}>`,
       to: email,
@@ -293,11 +318,17 @@ Tecnológico de Estudios Superiores de Chalco
       `.trim(),
     });
 
-    logger.info('Email verification sent', { email });
+    logger.info('✅ Correo de verificación enviado', { email });
     return { success: true };
   } catch (error) {
-    logger.error('Error sending verification email', { error: error.message, email });
-    throw new Error('No se pudo enviar el correo de verificación');
+    logger.error('❌ Error enviando correo de verificación', {
+      email,
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+    });
+    throw new Error('No se pudo enviar el correo de verificación: ' + error.message);
   }
 };
 
