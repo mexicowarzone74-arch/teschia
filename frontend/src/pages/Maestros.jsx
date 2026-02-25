@@ -81,6 +81,16 @@ const Maestros = () => {
       socket.on('maestro:status_changed', (data) => {
         loadMaestros();
       });
+
+      socket.on('email:verificado', (data) => {
+        // Actualizar badge sin recargar toda la lista
+        setMaestros(prev => prev.map(m =>
+          m.usuario_id === data.usuario_id
+            ? { ...m, email_verificado: true }
+            : m
+        ));
+        toast.success(`✅ Email verificado: ${data.email}`);
+      });
     }
 
     // Auto-refresh cada 5 minutos como respaldo
@@ -96,6 +106,7 @@ const Maestros = () => {
         socket.off('maestro:updated');
         socket.off('maestro:deleted');
         socket.off('maestro:status_changed');
+        socket.off('email:verificado');
       }
     };
   }, [socket]);

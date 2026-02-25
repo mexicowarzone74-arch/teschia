@@ -611,6 +611,12 @@ router.post('/verificar-email', async (req, res) => {
 
     logger.info('Email verified successfully', { userId: usuario_id, email });
 
+    // Notificar en tiempo real a todos los coordinadores conectados
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('email:verificado', { usuario_id, email });
+    }
+
     res.json({
       success: true,
       message: 'Email verificado exitosamente'
