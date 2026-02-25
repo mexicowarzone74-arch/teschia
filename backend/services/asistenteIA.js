@@ -142,15 +142,21 @@ Solo pregúntame cualquier cosa sobre el sistema.`,
       titulo: "Gestión de Pagos",
       descripcion: `Control completo de pagos y finanzas:
 
-💰 **Funciones principales:**
-- Registrar pagos mediante Formato Universal (ventanilla de gobierno)
-- Generar recibos automáticos
-- Enviar recordatorios por correo electrónico
-- Gestionar prórrogas con fechas límite
+💰 **Cómo registrar un pago:**
+1. Busca al alumno por nombre o matrícula
+2. Selecciona la inscripción del periodo actual
+3. Ingresa el monto
+4. Escribe el número de recibo del **Formato Universal** en el campo Referencia
+5. Guarda → se genera el recibo automáticamente
 
-💡 **Recordatorios automáticos:** Se envían por email 3 días antes del vencimiento.
+📋 **Otras funciones:**
+- Enviar recordatorios de pago por correo electrónico
+- Gestionar prórrogas con fechas límite extendidas
+- Ver historial completo de pagos por alumno
 
-⚠️ **Problema común:** Si no aparece un pago, verifica que la inscripción exista.`,
+⚠️ **TESCHA solo acepta Formato Universal** (ventanilla de gobierno). No se acepta efectivo, tarjeta ni transferencia.
+
+💡 **Si no aparece un pago:** Verifica que el alumno tenga una inscripción activa en el periodo actual.`,
       acciones: [
         "Registrar nuevo pago",
         "Enviar recordatorio",
@@ -267,14 +273,19 @@ Solo pregúntame cualquier cosa sobre el sistema.`,
 
     maestros: {
       titulo: "Gestión de Personal",
-      descripcion: `Control de maestros y usuarios:
-👨‍🏫 **Gestión de maestros:**
-- Datos de contacto
-- Grupos asignados
-- Carga horaria
-- Acceso al sistema
-🔐 **Permisos:** Cada maestro puede ver solo sus grupos.
-💡 **Sugerencia:** Revisa la carga horaria para distribuir equitativamente.`,
+      descripcion: `Control de maestros y usuarios del sistema:
+
+👨‍🏫 **Qué puedes hacer aquí:**
+- **Agregar maestros** → Nombre, correo, teléfono y niveles que imparte
+- **Crear usuario de acceso** → El maestro podrá entrar al sistema con su usuario y contraseña
+- **Ver grupos asignados** → Consulta la carga horaria de cada maestro
+- **Editar información** → Actualiza datos de contacto o especialidades
+
+🔐 **Permisos:** Cada maestro solo puede ver sus propios grupos y alumnos.
+
+💡 **¿Quieres registrar a alguien nuevo?** Dime: *"Quiero registrar al maestro [nombre]"* y te pido los datos necesarios.
+
+📋 **O manualmente:** Haz clic en el botón **Agregar Maestro** en la parte superior de esta sección.`,
       acciones: [
         "Agregar maestro",
         "Ver grupos asignados",
@@ -1183,13 +1194,52 @@ Formato: Guía paso a paso y este JSON al final:
     let respuestaFallback = null;
 
     // Detectar si es pregunta de DATOS (quién, cuántos, cuánto, lista, dame, muestra)
-    // o pregunta de NAVEGACIÓN/CÓMO (cómo, qué es, para qué, explica)
     const esPregunaDatos = /^(qui[eé]n|cu[aá]ntos?|cu[aá]nto|lista|dame|mu[eé]strame|cuales|cu[aá]les|hay algún|cuál es el|cuánto se|total de|reporte de)/i.test(preguntaLower);
 
-    // Solo devolver ayuda estática si la pregunta es de NAVEGACIÓN, no de datos
-    if (!esPregunaDatos) {
+    // Detectar si es pregunta sobre PROBLEMAS/ESTADO del sistema
+    const esProblemasSistema = /(problema|alerta|error|falla|diagnos|qué tiene|qué pasa|qué hay|qué está|estado del sistema|situación del sistema)/i.test(preguntaLower);
+
+    // Detectar si es solicitud de REGISTRO/CREACIÓN
+    const esRegistroMaestro  = /(registrar?|agregar?|añadir?|dar de alta|crear?|nuevo|nueva)\s+.*(maestro|profesor)/i.test(preguntaLower) || /(maestro|profesor)\s+.*(registrar?|agregar?|añadir?|nuevo|alta)/i.test(preguntaLower);
+    const esRegistroAlumno   = /(registrar?|agregar?|añadir?|dar de alta|crear?|nuevo|nueva)\s+.*(alumno|estudiante)/i.test(preguntaLower) || /(alumno|estudiante)\s+.*(registrar?|agregar?|nuevo)/i.test(preguntaLower);
+    const esRegistroGrupo    = /(crear?|nuevo|nueva|agregar?)\s+.*(grupo)/i.test(preguntaLower);
+    const esRegistroPago     = /(registrar?|c[oó]mo registro|agregar?|capturar?)\s+.*(pago)/i.test(preguntaLower) || /c[oó]mo (se registra|registro|pongo|capturo).*pago/i.test(preguntaLower);
+
+    // 1. Problemas/alertas del sistema → consultar la DB directamente
+    if (esProblemasSistema) {
+      try {
+        const alertasSistema = await detectarProblemasComunes(contexto?.userId, contexto?.rol || 'coordinador');
+        if (alertasSistema.length === 0) {
+          respuestaFallback = `✅ **El sistema no presenta problemas detectados en este momento.**\n\nTodas las verificaciones pasaron correctamente:\n- Periodo activo ✅\n- Pagos y vencimientos al día ✅\n- Calificaciones sin alertas críticas ✅\n\nSi notas algún comportamiento extraño, recarga la página o revisa la consola del navegador (F12).`;
+        } else {
+          const prioridades = { critica: '🔴', alta: '🟠', media: '🟡', baja: '🔵' };
+          const listaAlertas = alertasSistema.map(a => `${prioridades[a.prioridad] || '⚪'} **${a.titulo}**: ${a.mensaje}`).join('\n');
+          respuestaFallback = `### Situación Actual del Sistema\n\nSe encontraron **${alertasSistema.length}** alerta(s) activa(s):\n\n${listaAlertas}\n\n💡 Atiende primero las alertas 🔴 críticas.`;
+        }
+      } catch (e2) {
+        respuestaFallback = `No pude verificar el estado del sistema en este momento. Intenta de nuevo en unos segundos o revisa cada módulo directamente desde el menú lateral.`;
+      }
+    }
+    // 2. Registrar maestro → pedir datos paso a paso
+    else if (esRegistroMaestro) {
+      respuestaFallback = `### Registrar Nuevo Maestro\n\nPara registrar al maestro necesito los siguientes datos:\n\n- **Nombre(s)**\n- **Apellido Paterno**\n- **Apellido Materno**\n- **Correo electrónico**\n- **Teléfono**\n- **Niveles a impartir** (Básico, Intermedio, Avanzado, Perfeccionamiento 1, Perfeccionamiento 2 o C1)\n\nEscríbeme los datos y realizo el registro directamente.\n\n📌 También puedes hacerlo manualmente: **Maestros → Agregar Maestro** en el menú.`;
+    }
+    // 3. Registrar alumno → pedir datos paso a paso
+    else if (esRegistroAlumno) {
+      respuestaFallback = `### Registrar Nuevo Alumno\n\nNecesito los siguientes datos:\n\n- **Nombre(s)** completo y apellidos\n- **Correo electrónico**\n- **Matrícula** (si es alumno interno de la UAEM)\n- **Carrera** (si es interno)\n- **Tipo de alumno**: interno o externo\n\nEscríbeme los datos y proceso el registro.\n\n📌 También puedes ir a **Alumnos → Nuevo Alumno** en el menú.`;
+    }
+    // 4. Crear grupo → pedir datos paso a paso
+    else if (esRegistroGrupo) {
+      respuestaFallback = `### Crear Nuevo Grupo\n\nNecesito los siguientes datos:\n\n- **Código del grupo** (ej: ING-M1, BAS-S2)\n- **Nivel de inglés** (Básico, Intermedio, Avanzado, Perfeccionamiento 1, Perfeccionamiento 2 o C1)\n- **Turno** (matutino o sabatino)\n- **Cupo máximo** (alumnos)\n\nEscríbeme los datos y creo el grupo.\n\n📌 También puedes ir a **Grupos → Nuevo Grupo** en el menú.`;
+    }
+    // 5. Cómo registrar pagos → pasos reales
+    else if (esRegistroPago) {
+      respuestaFallback = `### Cómo Registrar un Pago\n\n**Pasos:**\n\n1. Ve al módulo **Pagos** en el menú lateral\n2. Haz clic en **Registrar Pago** o busca al alumno por nombre / matrícula\n3. Selecciona la inscripción del periodo actual\n4. Ingresa el **monto** del pago\n5. En el campo **Referencia**, escribe el número de recibo del **Formato Universal** (ventanilla de gobierno)\n6. Haz clic en **Guardar** → se genera el recibo automáticamente\n\n⚠️ **Importante:** TESCHA solo acepta pago mediante **Formato Universal** (ventanilla de gobierno). No se acepta efectivo, tarjeta ni transferencia.`;
+    }
+    // 6. Fallback genérico por sección (solo navegación, no datos)
+    else if (!esPregunaDatos) {
       if (preguntaLower.includes('grupo')) {
-        respuestaFallback = baseConocimiento.paginas?.grupos?.descripcion || baseConocimiento.paginas?.grupos?.descripcionMaestro;
+        respuestaFallback = baseConocimiento.paginas?.grupos?.descripcion;
       } else if (preguntaLower.includes('alumno') || preguntaLower.includes('inscri')) {
         respuestaFallback = baseConocimiento.paginas?.alumnos?.descripcion || baseConocimiento.paginas?.inscripciones?.descripcion;
       } else if (preguntaLower.includes('pago') || preguntaLower.includes('deuda') || preguntaLower.includes('cobr')) {
@@ -1204,6 +1254,14 @@ Formato: Guía paso a paso y este JSON al final:
         respuestaFallback = baseConocimiento.paginas?.reportes?.descripcion;
       } else if (preguntaLower.includes('asistencia')) {
         respuestaFallback = baseConocimiento.paginas?.asistencias?.descripcion;
+      } else if (preguntaLower.includes('horario') || preguntaLower.includes('calendario')) {
+        respuestaFallback = baseConocimiento.paginas?.horarios?.descripcion;
+      } else if (preguntaLower.includes('calificaci') || preguntaLower.includes('nota')) {
+        respuestaFallback = baseConocimiento.paginas?.calificaciones?.descripcion;
+      } else if (preguntaLower.includes('bienvenid') || preguntaLower.includes('hola') || preguntaLower.includes('qué puedes')) {
+        respuestaFallback = baseConocimiento.general.inicio;
+      } else if (preguntaLower.includes('flujo') || preguntaLower.includes('empezar') || preguntaLower.includes('inicio') || preguntaLower.includes('cómo funciona')) {
+        respuestaFallback = baseConocimiento.general.flujoBasico;
       }
     }
 
@@ -1217,10 +1275,10 @@ Formato: Guía paso a paso y este JSON al final:
       };
     }
 
-    // Fallback genérico si no hay info en base de conocimientos
+    // Fallback genérico solo si absolutamente no hay match
     return {
       success: true,
-      respuesta: `Lo siento, tuve un problema temporal al procesar tu consulta sobre: "${pregunta}"\n\nPor favor intenta de nuevo en unos segundos. Si el problema persiste, el administrador puede revisar los logs del servidor.\n\n💡 Mientras tanto, puedes usar los menús del sistema para navegar directamente a la sección que necesitas.`,
+      respuesta: `No pude obtener una respuesta en este momento. Por favor intenta de nuevo en unos segundos.\n\n💡 Puedes usar el menú lateral para navegar directamente a la sección que necesitas, o pregúntame algo más específico como:\n- "¿Cómo registro un maestro?"\n- "¿Qué problemas tiene el sistema?"\n- "¿Cómo registro un pago?"`,
       tutorial: [],
       acciones: [],
       sugerencias: generarSugerenciasSegunRol(contexto?.rol || 'coordinador')
