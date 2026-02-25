@@ -109,9 +109,10 @@ router.get('/', auth, checkRole('coordinador', 'administrativo'), async (req, re
 
     // Incluir el rol del usuario en la consulta
     let query = `
-      SELECT *
+      SELECT m.*, u.email_verificado
       FROM maestros_completo m
-      WHERE rol_usuario != 'coordinador'
+      JOIN usuarios u ON u.id = m.usuario_id
+      WHERE m.rol_usuario != 'coordinador'
     `;
     const params = [];
     let paramCount = 1;

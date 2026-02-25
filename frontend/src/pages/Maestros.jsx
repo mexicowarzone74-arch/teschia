@@ -385,6 +385,10 @@ const Maestros = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600">{m.correo}</div>
+                      {m.email_verificado
+                        ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 border border-green-300 rounded-full px-2 py-0.5 mt-1"><FaCheckCircle size={10} /> Verificado</span>
+                        : <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-100 border border-red-300 rounded-full px-2 py-0.5 mt-1"><FaTimesCircle size={10} /> Sin verificar</span>
+                      }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600">{m.telefono || '-'}</div>

@@ -55,6 +55,16 @@ router.post('/login', validate(loginSchema), trackLoginAttempts, async (req, res
     await clearLoginAttempts(username, req.ip);
     logger.info('Login successful', { username, rol: usuario.rol });
 
+    // Bloquear login si email no verificado (solo maestros y administrativos)
+    if (usuario.rol !== 'coordinador' && !usuario.email_verificado) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_RESPONSE_TIME) await constantTimeDelay(MIN_RESPONSE_TIME - elapsed);
+      return res.status(403).json({
+        error: 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.',
+        email_no_verificado: true
+      });
+    }
+
     // VERIFICAR 2FA
     const tfaResult = await pool.query(
       'SELECT enabled FROM two_factor_auth WHERE usuario_id = $1',
