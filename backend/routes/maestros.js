@@ -5,7 +5,6 @@ import pool from '../config/database.js';
 import { auth, checkRole } from '../middleware/auth.js';
 import { logAudit } from '../middleware/audit.js';
 import logger from '../utils/logger.js';
-import generator from 'generate-password';
 import { enviarEmailVerificacion } from '../services/emailService.js';
 
 const router = express.Router();
@@ -61,21 +60,39 @@ async function generarUsername(nombre, apellidoPaterno, apellidoMaterno = '', cl
 }
 
 // =============================================
-// Función para generar contraseña segura pero legible (Min 10 caracteres, mix real)
+// Función para generar contraseña segura con crypto (criptográficamente aleatoria)
 // =============================================
 function generarPasswordSegura() {
-  const base = generator.generate({
-    length: 10,
-    numbers: true,
-    uppercase: true,
-    lowercase: true,
-    strict: true
-  });
-  
-  const symbols = ['!', '#', '$', '*', '-', '_'];
-  const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
-  
-  return base + randomSymbol;
+  const lower   = 'abcdefghijkmnopqrstuvwxyz';   // sin l para evitar confusión
+  const upper   = 'ABCDEFGHJKLMNPQRSTUVWXYZ';    // sin I/O para evitar confusión
+  const numbers = '23456789';                     // sin 0/1 para evitar confusión
+  const symbols = '!#$*-_';
+  const all     = lower + upper + numbers + symbols;
+
+  const randByte = () => crypto.randomBytes(1)[0];
+  const pick = (set) => set[randByte() % set.length];
+
+  // Garantizar al menos 1 de cada tipo
+  const chars = [
+    pick(lower),
+    pick(lower),
+    pick(upper),
+    pick(upper),
+    pick(numbers),
+    pick(numbers),
+    pick(symbols),
+  ];
+
+  // Rellenar hasta 12 caracteres con mezcla aleatoria
+  while (chars.length < 12) chars.push(pick(all));
+
+  // Mezclar usando Fisher-Yates con crypto
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randByte() % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join('');
 }
 
 // =============================================
