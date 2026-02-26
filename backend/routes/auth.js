@@ -467,7 +467,7 @@ router.get('/validar-token-reset/:token', async (req, res) => {
 
     // Primero ver si existe (sin filtros de expiración) para dar mensaje preciso
     const raw = await pool.query(
-      `SELECT usuario_id, expira_en AT TIME ZONE 'UTC' AS expira_utc, usado 
+      `SELECT usuario_id, expira_en, usado, expira_en > NOW() AS vigente
        FROM password_reset_tokens WHERE token = $1`,
       [token]
     );
@@ -481,8 +481,7 @@ router.get('/validar-token-reset/:token', async (req, res) => {
       return res.json({ valido: false, motivo: 'Este enlace ya fue utilizado. Solicita un nuevo correo de recuperación.' });
     }
 
-    const nowUTC = new Date();
-    if (new Date(row.expira_utc) <= nowUTC) {
+    if (!row.vigente) {
       return res.json({ valido: false, motivo: 'El enlace expiró (válido 1 hora). Por favor solicita uno nuevo.' });
     }
 
@@ -506,9 +505,9 @@ router.post('/restablecer-contrasena', async (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     }
 
-    // Verificar token con cast explícito para evitar problemas de timezone
+    // Verificar token — session timezone=UTC, por lo que NOW() y la fecha almacenada son comparables directamente
     const result = await pool.query(
-      `SELECT usuario_id, expira_en AT TIME ZONE 'UTC' AS expira_utc, usado
+      `SELECT usuario_id, usado, expira_en, expira_en > NOW() AS vigente
        FROM password_reset_tokens WHERE token = $1`,
       [token]
     );
@@ -525,8 +524,8 @@ router.post('/restablecer-contrasena', async (req, res) => {
       return res.status(400).json({ error: 'Este enlace ya fue utilizado. Solicita un nuevo correo de recuperación.' });
     }
 
-    if (new Date(row.expira_utc) <= new Date()) {
-      logger.warn('Password reset: token expirado', { token: token.substring(0, 8) + '...', expira: row.expira_utc });
+    if (!row.vigente) {
+      logger.warn('Password reset: token expirado', { token: token.substring(0, 8) + '...', expira: row.expira_en });
       return res.status(400).json({ error: 'El enlace expiró (válido 1 hora). Por favor solicita uno nuevo.' });
     }
 

@@ -33,7 +33,7 @@ const pool = new Pool({
   statement_timeout: 20000,
   keepAlive: true,                // Keepalive para detectar conexiones muertas
   keepAliveInitialDelayMillis: 5000,
-  options: '-c timezone=America/Mexico_City -c client_encoding=UTF8'
+  options: '-c timezone=UTC -c client_encoding=UTF8' // UTC siempre: Node.js Date es UTC, Supabase es UTC
 });
 
 // Test de conexión
