@@ -420,15 +420,15 @@ router.post('/solicitar-recuperacion', async (req, res) => {
 
     // Generar token único de recuperación (válido por 1 hora)
     const token = crypto.randomBytes(32).toString('hex');
-    const expiracion = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
-    // Guardar token en la base de datos
+    // Guardar token en la base de datos — expiración calculada en SQL para
+    // evitar cualquier discrepancia de timezone entre Node.js y PostgreSQL
     await pool.query(
       `INSERT INTO password_reset_tokens (usuario_id, token, expira_en) 
-       VALUES ($1, $2, $3) 
+       VALUES ($1, $2, NOW() + INTERVAL '1 hour') 
        ON CONFLICT (usuario_id) 
-       DO UPDATE SET token = $2, expira_en = $3, usado = false`,
-      [usuario.id, token, expiracion]
+       DO UPDATE SET token = $2, expira_en = NOW() + INTERVAL '1 hour', usado = false`,
+      [usuario.id, token]
     );
 
     // Construir URL de recuperación
@@ -585,15 +585,14 @@ router.post('/solicitar-verificacion-email', async (req, res) => {
       return res.status(400).json({ error: 'El usuario no tiene email registrado' });
     }
 
-    // Generar token de verificación
+    // Generar token de verificación — expiración calculada en SQL
     const token = crypto.randomBytes(32).toString('hex');
-    const expiraEn = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
 
     // Guardar token en BD
     await pool.query(
       `INSERT INTO email_verification_tokens (usuario_id, token, email, expira_en)
-       VALUES ($1, $2, $3, $4)`,
-      [usuario.id, token, usuario.email, expiraEn]
+       VALUES ($1, $2, $3, NOW() + INTERVAL '24 hours')`,
+      [usuario.id, token, usuario.email]
     );
 
     // Enviar email

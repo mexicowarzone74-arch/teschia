@@ -37,8 +37,14 @@ const pool = new Pool({
 });
 
 // Test de conexión
-pool.on('connect', () => {
+pool.on('connect', async (client) => {
   console.log('✅ Conectado a PostgreSQL');
+  // Verificar timezone de la sesión para diagnóstico
+  try {
+    const tz = await client.query('SHOW timezone');
+    const now = await client.query('SELECT NOW() as now_db');
+    console.log(`🕐 DB session timezone: ${tz.rows[0].timezone} | NOW(): ${now.rows[0].now_db}`);
+  } catch (_) {}
 });
 
 pool.on('error', (err) => {
