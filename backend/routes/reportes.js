@@ -442,7 +442,7 @@ router.get('/exportar/:tipo', auth, checkRole('coordinador', 'administrativo'), 
           FROM inscripciones i
           JOIN alumnos a ON i.alumno_id = a.id
           JOIN grupos g ON i.grupo_id = g.id
-          LEFT JOIN calificaciones c ON i.id = c.inscripcion_id
+          LEFT JOIN calificaciones_parciales c ON i.id = c.inscripcion_id
           WHERE 1=1
         `;
         const params = [];
@@ -469,10 +469,10 @@ router.get('/exportar/:tipo', auth, checkRole('coordinador', 'administrativo'), 
             COALESCE(MAX(CASE WHEN c.parcial = 2 THEN c.calificacion END), 0) as p2,
             COALESCE(MAX(CASE WHEN c.parcial = 3 THEN c.calificacion END), 0) as p3,
             COALESCE(ROUND(AVG(c.calificacion), 2), 0) as promedio,
-            ROUND((COUNT(asist.id) FILTER (WHERE asist.presente = true OR asist.justificada = true)::numeric / NULLIF(COUNT(asist.id), 0)) * 100, 2) as asistencia_pct,
+            ROUND((COUNT(asist.id) FILTER (WHERE asist.presente = true OR asist.justificada = true))::numeric / NULLIF(COUNT(asist.id), 0) * 100, 2) as asistencia_pct,
             CASE 
               WHEN COALESCE(SUM(c.calificacion), 0) >= 210 AND 
-                   ROUND((COUNT(asist.id) FILTER (WHERE asist.presente = true OR asist.justificada = true)::numeric / NULLIF(COUNT(asist.id), 0)) * 100, 2) >= 80 
+                   ROUND((COUNT(asist.id) FILTER (WHERE asist.presente = true OR asist.justificada = true))::numeric / NULLIF(COUNT(asist.id), 0) * 100, 2) >= 80 
               THEN 'APROBADO' 
               ELSE 'REPROBADO' 
             END as estatus_final
@@ -480,7 +480,7 @@ router.get('/exportar/:tipo', auth, checkRole('coordinador', 'administrativo'), 
           JOIN alumnos a ON i.alumno_id = a.id
           JOIN grupos g ON i.grupo_id = g.id
           JOIN niveles n ON g.nivel_id = n.id
-          LEFT JOIN calificaciones c ON i.id = c.inscripcion_id
+          LEFT JOIN calificaciones_parciales c ON i.id = c.inscripcion_id
           LEFT JOIN asistencias asist ON i.id = asist.inscripcion_id
           WHERE i.estatus = 'activo'
         `;
